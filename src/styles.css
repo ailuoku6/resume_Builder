@@ -1,0 +1,97 @@
+.container{
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    padding-top: 100px;
+}
+
+.resume_paper{
+    position: relative;
+    width: 210mm;
+    padding: 60px;
+}
+
+.baseInfoWrap{
+    display: flex;
+    flex-direction: row;
+}
+
+.avatar{
+    height: 170px;
+    width: 110px;
+}
+
+.infoDetail{
+    margin-left: 20px;
+    margin-top: 5px;
+    display: flex;
+    flex-direction: column;
+    font-weight: bolder;
+}
+
+.aline{
+    display: flex;
+    flex-direction: row;
+    align-items: baseline;
+}
+
+.name{
+    font-weight: bold;
+    font-size: 30px;
+}
+
+.sex{
+    margin-left: 20px;
+}
+
+.address{
+    margin-bottom: 15px;
+}
+
+.phone{
+
+}
+
+.email{
+    margin-left: 50px;
+}
+
+.itemWrap{
+    margin-top: 15px;
+}
+
+.itemName{
+    padding-left: 18px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    background-color: #e8e8e8;
+}
+
+.content{
+    padding: 16px 0 0 20px;
+}
+
+.entryTitle{
+    display: flex;
+    justify-content: space-between;
+}
+
+.entryItem{
+    margin-bottom: 20px;
+}
+
+.fulInput{
+    width: 80%;
+}
+
+.sortable-ghost {
+    opacity: 0.5;
+    background: #c8ebfb;
+}
+
+.pdf-viewer {
+    width: 100% !important;
+    height: 90vh;
+}
+
+
