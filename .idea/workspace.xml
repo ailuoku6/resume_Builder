@@ -2,18 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="d0a99114-0150-4ed7-a456-48a0a068d8a7" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/Main.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/dataStructure.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/styles.css" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/widget/CustomText.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/widget/GeneratedResume.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/widget/ImagePicker.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/App.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/App.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/yarn.lock" beforeDir="false" afterPath="$PROJECT_DIR$/yarn.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/widget/GeneratedResume.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/widget/GeneratedResume.js" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -91,7 +81,9 @@
       <workItem from="1583891510809" duration="33308000" />
       <workItem from="1583978534491" duration="1820000" />
       <workItem from="1583986335295" duration="45000" />
-      <workItem from="1583987637818" duration="8930000" />
+      <workItem from="1583987637818" duration="10399000" />
+      <workItem from="1583999569380" duration="249000" />
+      <workItem from="1584072924483" duration="610000" />
     </task>
     <servers />
   </component>

@@ -8,11 +8,17 @@ import fontR from '../font/Font-OPPOSans/OPPOSans-R.ttf'
 // import fontH from '../font/Font-OPPOSans/OPPOSans-H.ttf'
 import fontL from '../font/Font-OPPOSans/OPPOSans-L.ttf'
 import fontM from '../font/Font-OPPOSans/OPPOSans-M.ttf'
-Font.register({ family: 'oppoFontR', src: fontR });
-// Font.register({family:'oppoFontB',src:fontB});
-// Font.register({family:'oppoFontH',src:fontH});
-Font.register({family:'oppoFontL',src:fontL});
-Font.register({family:'oppoFontM',src:fontM});
+// Font.register({ family: 'oppoFontR', src: fontR });
+// // Font.register({family:'oppoFontB',src:fontB});
+// // Font.register({family:'oppoFontH',src:fontH});
+// Font.register({family:'oppoFontL',src:fontL});
+// Font.register({family:'oppoFontM',src:fontM});
+
+Font.register({ family: 'oppoFont', fonts: [
+        { src: fontM,fontStyle: 'normal', fontWeight: 'bold' }, // font-style: normal, font-weight: normal
+        { src: fontR, fontStyle: 'normal',fontWeight:'normal' },
+        { src: fontL, fontStyle: 'normal', fontWeight: 'light' },
+    ]});
 
 //
 Font.registerHyphenationCallback(word => word.length === 1 ? [word] : Array.from(word).map(char => char));
@@ -24,7 +30,7 @@ const styles = StyleSheet.create({
         // backgroundColor:'#e4e4e4',
         // width:'100%',
         padding:50,
-        fontFamily:'oppoFontR'
+        fontFamily:'oppoFont'
     },
     baseInfoWrap:{
         flexDirection:'row'
@@ -46,28 +52,32 @@ const styles = StyleSheet.create({
         // alignItems:'end',
     },
     name:{
-        fontFamily:'oppoFontM',
+        // fontFamily:'oppoFontM',
         fontWeight:'bold',
         fontSize: '18',
     },
     sex:{
-        fontFamily:'oppoFontL',
+        // fontFamily:'oppoFontL',
         marginLeft: 20,
-        fontSize: '11'
+        fontSize: '11',
+        fontWeight:'light'
     },
     address:{
-        fontFamily:'oppoFontL',
+        // fontFamily:'oppoFontL',
         marginBottom: 15,
-        fontSize: '11'
+        fontSize: '11',
+        fontWeight:'light'
     },
     phone:{
-        fontFamily:'oppoFontL',
-        fontSize: '11'
+        // fontFamily:'oppoFontL',
+        fontSize: '11',
+        fontWeight:'light'
     },
     email:{
-        fontFamily:'oppoFontL',
+        // fontFamily:'oppoFontL',
         marginLeft: 50,
-        fontSize: '11'
+        fontSize: '11',
+        fontWeight:'light'
     },
     itemWrap:{
         marginTop: 15,
@@ -91,47 +101,47 @@ const styles = StyleSheet.create({
         // paddingRight:8,
     },
     fontBigBold:{//最大加粗字体
-        fontFamily:'oppoFontM',
+        // fontFamily:'oppoFontM',
         fontWeight: 'bold',
         fontSize: '15',
     },
     fontBig:{//最大常规字体
-        fontFamily:'oppoFontR',
+        // fontFamily:'oppoFontR',
         fontSize:'15',
         fontWeight:'normal'
     },
     fontBigLight:{
-        fontFamily:'oppoFontL',
+        // fontFamily:'oppoFontL',
         fontSize:'15',
         fontWeight:'light'
     },
     fontMidBold:{
-        fontFamily:'oppoFontM',
+        // fontFamily:'oppoFontM',
         fontSize:'13',
         fontWeight: 'bold',
     },
     fontMid:{
-        fontFamily:'oppoFontR',
+        // fontFamily:'oppoFontR',
         fontSize:'13',
         fontWeight:'normal'
     },
     fontMidLight:{
-        fontFamily:'oppoFontL',
+        // fontFamily:'oppoFontL',
         fontSize:'13',
         fontWeight:'light'
     },
     fontSmaBold:{
-        fontFamily:'oppoFontM',
+        // fontFamily:'oppoFontM',
         fontSize:'11',
         fontWeight: 'bold',
     },
     fontSma:{
-        fontFamily:'oppoFontR',
+        // fontFamily:'oppoFontR',
         fontSize:'11',
         fontWeight:'normal'
     },
     fontSmaLight:{
-        fontFamily:'oppoFontL',
+        // fontFamily:'oppoFontL',
         fontSize:'11',
         fontWeight:'light'
     }
