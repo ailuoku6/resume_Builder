@@ -93,7 +93,7 @@ const styles = StyleSheet.create({
         paddingLeft:20,
     },
     entryItem:{
-        marginBottom: 20,
+        marginBottom: 10,
     },
     entryTitle:{
         flexDirection:'row',
@@ -185,7 +185,7 @@ class GeneratedResume extends React.Component{
                                 <View style={styles.content}>
                                     {item.entry.map((entryItem,entryIndex)=>{
                                         return (
-                                            <View key={JSON.stringify(entryItem)+entryIndex} style={styles.entryItem}>
+                                            <View key={JSON.stringify(entryItem)+entryIndex} style={entryIndex===item.entry.length-1?{}:styles.entryItem}>
                                                 <View style={styles.entryTitle}>
                                                     <Text style={styles.fontMid}>{entryItem.title}</Text>
                                                     <Text style={styles.fontSmaLight}>{entryItem.mark}</Text>
