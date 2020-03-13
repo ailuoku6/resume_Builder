@@ -45,7 +45,8 @@ const AddList = [
     {name:'求职意向'},
     {name:'项目经历'},
     {name:'职业技能'},
-    {name:'资格证书'}
+    {name:'资格证书'},
+    {name:'教育背景'}
 ];
 
 class Main extends React.Component{
@@ -98,6 +99,7 @@ class Main extends React.Component{
                                 {AddList.map((item,index)=>{
                                     return (
                                         <ListItem button key={item.name} onClick={()=>{
+                                            if (!this.state.edit) return;
                                             let newitem = {
                                                 itemName:item.name,
                                                 entry:[
