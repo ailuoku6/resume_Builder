@@ -200,7 +200,8 @@ class GeneratedResume extends React.Component{
                                     {item.subEntry.map((subEntryItem,subEntryIndex)=>{
                                         return (
                                             <View key={JSON.stringify(subEntryItem)+subEntryIndex}>
-                                                <Text style={styles.fontSmaLight}>{subEntryItem.name}</Text>
+                                                {/*<Text style={styles.fontSmaLight}>{subEntryItem.name}</Text>*/}
+                                                <CustomText text={subEntryItem.name??''} style={styles.fontSmaLight}/>
                                             </View>
                                         )
                                     })}

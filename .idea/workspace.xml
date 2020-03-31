@@ -4,6 +4,7 @@
     <list default="true" id="d0a99114-0150-4ed7-a456-48a0a068d8a7" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/Main.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/Main.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/widget/GeneratedResume.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/widget/GeneratedResume.js" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -83,7 +84,8 @@
       <workItem from="1583986335295" duration="45000" />
       <workItem from="1583987637818" duration="10399000" />
       <workItem from="1583999569380" duration="249000" />
-      <workItem from="1584072924483" duration="2110000" />
+      <workItem from="1584072924483" duration="2206000" />
+      <workItem from="1585654958302" duration="2100000" />
     </task>
     <task id="LOCAL-00001" summary="update">
       <created>1584073664917</created>
@@ -99,7 +101,14 @@
       <option name="project" value="LOCAL" />
       <updated>1584076016755</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="调整">
+      <created>1584076319907</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1584076319907</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">

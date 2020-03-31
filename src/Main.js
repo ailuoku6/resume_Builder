@@ -24,6 +24,7 @@ import EditIcon from '@material-ui/icons/Edit';
 import DoneIcon from '@material-ui/icons/Done';
 import AddIcon from '@material-ui/icons/Add';
 import MenuIcon from '@material-ui/icons/Menu';
+import SaveIcon from '@material-ui/icons/Save';
 
 import IconButton from '@material-ui/core/IconButton';
 import DeleteIcon from '@material-ui/icons/Delete';
@@ -62,6 +63,14 @@ class Main extends React.Component{
             items:[],
             edit:true,
             open:false
+        }
+    }
+
+    componentDidMount() {
+        let data = localStorage.getItem('data');
+        if (data){
+            let newState = JSON.parse(data);
+            this.setState(newState);
         }
     }
 
@@ -458,6 +467,12 @@ class Main extends React.Component{
                     ):(
                         <EditIcon color={'inherit'} style={{color:'#fff'}}/>
                     )}
+                </Fab>
+
+                <Fab color="inherit" aria-label="add" size={'small'} style={{position:'fixed',right:30,bottom:80,backgroundColor:fabColor}} onClick={()=>{
+                    localStorage.setItem('data',JSON.stringify(this.state));
+                }}>
+                    <SaveIcon color={'inherit'} style={{color:'#fff'}}/>
                 </Fab>
             </React.Fragment>
         )
