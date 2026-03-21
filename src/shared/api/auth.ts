@@ -13,6 +13,15 @@ interface AuthSessionResponse {
   user: AuthUser;
 }
 
+interface ProfileUpdateResponse {
+  result: true;
+  user: AuthUser;
+}
+
+interface ChangePasswordResponse {
+  result: true;
+}
+
 export const signUpWithEmail = async (
   email: string,
   password: string,
@@ -49,4 +58,35 @@ export const loadAuthSession = async (): Promise<AuthUser> => {
   });
 
   return response.user;
+};
+
+export const updateProfile = async (displayName: string): Promise<AuthUser> => {
+  const response = await requestJson<ProfileUpdateResponse>(
+    '/api/auth/profile',
+    {
+      method: 'PUT',
+      body: JSON.stringify({ displayName }),
+    },
+    {
+      auth: true,
+    },
+  );
+
+  return response.user;
+};
+
+export const changePassword = async (
+  currentPassword: string,
+  nextPassword: string,
+): Promise<void> => {
+  await requestJson<ChangePasswordResponse>(
+    '/api/auth/change-password',
+    {
+      method: 'POST',
+      body: JSON.stringify({ currentPassword, nextPassword }),
+    },
+    {
+      auth: true,
+    },
+  );
 };

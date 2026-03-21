@@ -15,6 +15,11 @@ interface ResumeDraftListResponse {
   drafts: CloudDraftSummary[];
 }
 
+interface ResumeDraftDeleteResponse {
+  result: true;
+  draftId: string;
+}
+
 export const loadCloudResumeDraft = async (draftId: string): Promise<ResumeDraftResponse> => {
   return requestJson<ResumeDraftResponse>(
     `/api/resume-drafts/${encodeURIComponent(draftId)}`,
@@ -48,4 +53,18 @@ export const listCloudResumeDrafts = async (): Promise<CloudDraftSummary[]> => {
   });
 
   return response.drafts;
+};
+
+export const deleteCloudResumeDraft = async (draftId: string): Promise<string> => {
+  const response = await requestJson<ResumeDraftDeleteResponse>(
+    `/api/resume-drafts/${encodeURIComponent(draftId)}`,
+    {
+      method: 'DELETE',
+    },
+    {
+      auth: true,
+    },
+  );
+
+  return response.draftId;
 };

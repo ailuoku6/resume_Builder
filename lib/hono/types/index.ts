@@ -6,13 +6,18 @@ export type Bindings = {
   RESUME_ENCRYPTION_SECRET: string;
 };
 
-export interface AuthUser {
+export interface AuthIdentity {
   id: string;
   email: string;
 }
 
+export interface AuthUser extends AuthIdentity {
+  displayName: string;
+  createdAt: number;
+}
+
 export type Variables = {
-  authUser: AuthUser;
+  authUser: AuthIdentity;
 };
 
 export interface ResumeDraftRecord {
@@ -33,12 +38,14 @@ export interface ResumeDraftResult {
 export interface ResumeDraftSummary {
   draftId: string;
   name: string;
+  createdAt: number;
   updatedAt: number;
 }
 
 export interface UserRecord {
   id: string;
   email: string;
+  display_name: string;
   password_hash: string;
   password_salt: string;
   created_at: number;

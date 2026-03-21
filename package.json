@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build && mkdir -p dist/functions dist/lib && cp -R functions/. dist/functions && cp -R lib/. dist/lib",
     "preview": "vite preview",
     "preview:cloudflare": "wrangler pages dev dist",
-    "db:migrate:local": "wrangler d1 execute RESUME_DB --local --file=./migrations/0001_resume_drafts.sql && wrangler d1 execute RESUME_DB --local --file=./migrations/0002_users_and_secure_drafts.sql"
+    "db:migrate:local": "wrangler d1 execute RESUME_DB --local --file=./migrations/0001_resume_drafts.sql && wrangler d1 execute RESUME_DB --local --file=./migrations/0002_users_and_secure_drafts.sql && wrangler d1 execute RESUME_DB --local --file=./migrations/0003_profile_fields.sql"
   },
   "dependencies": {
     "@material-ui/core": "^4.9.5",

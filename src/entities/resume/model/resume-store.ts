@@ -308,6 +308,11 @@ export class ResumeStore implements ResumeState {
     this.saveToStorage();
   }
 
+  resetToDefault(): void {
+    this.hydrate(DEFAULT_RESUME_DATA);
+    this.saveToStorage();
+  }
+
   loadFromStorage(): void {
     if (typeof window === 'undefined') {
       return;

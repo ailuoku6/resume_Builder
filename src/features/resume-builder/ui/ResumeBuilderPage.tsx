@@ -4,13 +4,18 @@ import { observer } from 'kisstate';
 
 import { authStore } from '@/entities/auth/model/auth-store';
 import type { CloudDraftSummary } from '@/entities/auth/model/types';
+import { AccountDrawer } from '@/features/auth/ui/AccountDrawer';
 import { AuthDialog } from '@/features/auth/ui/AuthDialog';
 import { CloudDraftDrawer } from '@/features/auth/ui/CloudDraftDrawer';
 import { resumeStore } from '@/entities/resume/model/resume-store';
 import GeneratedResumeDocument from '@/features/resume-preview/ui/GeneratedResumeDocument';
 import { GeneratedResumePreview } from '@/features/resume-preview/ui/GeneratedResumePreview';
 import { loadAuthSession } from '@/shared/api/auth';
-import { loadCloudResumeDraft, saveCloudResumeDraft } from '@/shared/api/cloudResume';
+import {
+  deleteCloudResumeDraft,
+  loadCloudResumeDraft,
+  saveCloudResumeDraft,
+} from '@/shared/api/cloudResume';
 import { ApiRequestError } from '@/shared/api/http';
 
 import { AddSectionDrawer } from './AddSectionDrawer';
@@ -171,6 +176,14 @@ const ResumeBuilderPageBase: React.FC = () => {
     window.history.replaceState({}, '', url.toString());
   };
 
+  const handleCreateBlankResume = (): void => {
+    resumeStore.resetToDefault();
+    resumeStore.setCloudDraftId(null);
+    clearDraftUrl();
+    updateSaveLabel('已新建空白简历');
+    authStore.closeDraftsDrawer();
+  };
+
   const handleLoadDraft = async (draftId: string): Promise<void> => {
     try {
       const draft = await loadCloudResumeDraft(draftId);
@@ -187,6 +200,67 @@ const ResumeBuilderPageBase: React.FC = () => {
       }
 
       window.alert(error instanceof Error ? error.message : '加载云端草稿失败。');
+    }
+  };
+
+  const handleSaveAsNewDraft = async (): Promise<void> => {
+    if (!authStore.isAuthenticated) {
+      authStore.openAuthDialog();
+      return;
+    }
+
+    if (isSavingDraft) {
+      return;
+    }
+
+    resumeStore.saveToStorage();
+    setIsSavingDraft(true);
+    setSaveLabel('另存中...');
+
+    try {
+      const draft = await saveCloudResumeDraft(resumeStore.resumeData, null);
+      resumeStore.setCloudDraftId(draft.draftId);
+      syncDraftUrl(draft.draftId);
+      updateSaveLabel('已另存为新草稿');
+      authStore.closeDraftsDrawer();
+    } catch (error) {
+      if (error instanceof ApiRequestError && error.status === 401) {
+        authStore.clearSession();
+        authStore.openAuthDialog();
+      }
+
+      window.alert(error instanceof Error ? error.message : '另存为新草稿失败。');
+      updateSaveLabel('已保存到本地');
+    } finally {
+      setIsSavingDraft(false);
+    }
+  };
+
+  const handleDeleteDraft = async (draft: CloudDraftSummary): Promise<void> => {
+    const confirmed = window.confirm(`确定要删除“${draft.name}”吗？删除后无法恢复。`);
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      await deleteCloudResumeDraft(draft.draftId);
+      authStore.setDrafts(authStore.drafts.filter((item) => item.draftId !== draft.draftId));
+
+      if (resumeStore.cloudDraftId === draft.draftId) {
+        resumeStore.setCloudDraftId(null);
+        clearDraftUrl();
+        updateSaveLabel('当前云端草稿已删除，本地内容已保留');
+      } else {
+        updateSaveLabel('草稿已删除');
+      }
+    } catch (error) {
+      if (error instanceof ApiRequestError && error.status === 401) {
+        authStore.clearSession();
+        authStore.openAuthDialog();
+      }
+
+      window.alert(error instanceof Error ? error.message : '删除草稿失败。');
     }
   };
 
@@ -267,10 +341,24 @@ const ResumeBuilderPageBase: React.FC = () => {
     <div className="builder-shell">
       <AddSectionDrawer store={resumeStore} />
       <AuthDialog />
+      <AccountDrawer
+        onLogout={() => {
+          handleLogout();
+        }}
+      />
       <CloudDraftDrawer
         activeDraftId={resumeStore.cloudDraftId}
         onSelectDraft={(draft: CloudDraftSummary) => {
           void handleLoadDraft(draft.draftId);
+        }}
+        onDeleteDraft={(draft: CloudDraftSummary) => {
+          void handleDeleteDraft(draft);
+        }}
+        onCreateBlankDraft={() => {
+          handleCreateBlankResume();
+        }}
+        onSaveAsNewDraft={() => {
+          void handleSaveAsNewDraft();
         }}
       />
 
@@ -293,8 +381,14 @@ const ResumeBuilderPageBase: React.FC = () => {
         <div className="builder-actions">
           {authStore.isAuthenticated ? (
             <>
-              <button type="button" className="topbar-button topbar-button--account">
-                {authStore.user?.email}
+              <button
+                type="button"
+                className="topbar-button topbar-button--account"
+                onClick={() => {
+                  authStore.openAccountDrawer();
+                }}
+              >
+                {authStore.user?.displayName || authStore.user?.email}
               </button>
 
               <button
@@ -305,16 +399,6 @@ const ResumeBuilderPageBase: React.FC = () => {
                 }}
               >
                 我的草稿
-              </button>
-
-              <button
-                type="button"
-                className="topbar-button topbar-button--subtle"
-                onClick={() => {
-                  handleLogout();
-                }}
-              >
-                退出登录
               </button>
             </>
           ) : (

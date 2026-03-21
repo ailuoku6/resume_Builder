@@ -21,7 +21,7 @@ npm run build
 
 - API 入口：`functions/api/[[routes]].ts`
 - 后端路由：`lib/hono/index.ts`
-- D1 建表脚本：`migrations/0001_resume_drafts.sql`、`migrations/0002_users_and_secure_drafts.sql`
+- D1 建表脚本：`migrations/0001_resume_drafts.sql`、`migrations/0002_users_and_secure_drafts.sql`、`migrations/0003_profile_fields.sql`
 - Cloudflare 配置：`wrangler.toml`
 
 首次使用前需要把 `wrangler.toml` 里的 D1 `database_id / preview_database_id` 换成你自己的值，然后执行本地迁移：
@@ -44,7 +44,11 @@ wrangler secret put RESUME_ENCRYPTION_SECRET
 现在云端能力包含：
 
 - 邮箱注册 / 登录
+- 用户个人资料（显示名称）
+- 修改密码
 - 按用户隔离的简历草稿
+- 多份简历管理（切换 / 新建空白 / 另存为新草稿）
+- 删除云端草稿
 - D1 中仅保存加密后的简历 payload
 - 前端“我的草稿”抽屉按当前登录用户展示
 

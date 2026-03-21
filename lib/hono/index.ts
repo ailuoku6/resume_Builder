@@ -3,8 +3,13 @@ import { Hono } from 'hono';
 import type { ResumeData } from '../../src/entities/resume/model/types';
 import { authenticate } from './middleware/authenticate';
 import errorHandle from './middleware/errorHandle';
-import { login, signUp } from './service/authService';
-import { getResumeDraft, listResumeDrafts, saveResumeDraft } from './service/resumeDraftService';
+import { changePassword, getProfile, login, signUp, updateProfile } from './service/authService';
+import {
+  deleteResumeDraft,
+  getResumeDraft,
+  listResumeDrafts,
+  saveResumeDraft,
+} from './service/resumeDraftService';
 import type { Bindings, Variables } from './types';
 
 const app = new Hono<{ Bindings: Bindings; Variables: Variables }>();
@@ -23,6 +28,8 @@ const isPasswordValid = (value: string): boolean => {
 
 app.use('/api/*', errorHandle);
 app.use('/api/auth/session', authenticate);
+app.use('/api/auth/profile', authenticate);
+app.use('/api/auth/change-password', authenticate);
 app.use('/api/resume-drafts*', authenticate);
 
 app.get('/api/health', (ctx) => {
@@ -99,9 +106,95 @@ app.post('/api/auth/login', async (ctx) => {
 });
 
 app.get('/api/auth/session', async (ctx) => {
+  const profile = await getProfile(ctx, ctx.get('authUser').id);
+
+  if (!profile) {
+    return ctx.json(
+      {
+        result: false,
+        message: 'User not found.',
+      },
+      404,
+    );
+  }
+
   return ctx.json({
     result: true,
-    user: ctx.get('authUser'),
+    user: profile,
+  });
+});
+
+app.put('/api/auth/profile', async (ctx) => {
+  const body = await ctx.req.json().catch(() => null);
+  const displayName = typeof body?.displayName === 'string' ? body.displayName : '';
+
+  if (!displayName.trim()) {
+    return ctx.json(
+      {
+        result: false,
+        message: '请输入显示名称。',
+      },
+      400,
+    );
+  }
+
+  const profile = await updateProfile(ctx, ctx.get('authUser').id, displayName);
+
+  if (!profile) {
+    return ctx.json(
+      {
+        result: false,
+        message: 'User not found.',
+      },
+      404,
+    );
+  }
+
+  return ctx.json({
+    result: true,
+    user: profile,
+  });
+});
+
+app.post('/api/auth/change-password', async (ctx) => {
+  const body = await ctx.req.json().catch(() => null);
+  const currentPassword = typeof body?.currentPassword === 'string' ? body.currentPassword : '';
+  const nextPassword = typeof body?.nextPassword === 'string' ? body.nextPassword : '';
+
+  if (!currentPassword.trim() || !isPasswordValid(nextPassword)) {
+    return ctx.json(
+      {
+        result: false,
+        message: '请输入当前密码，新密码至少 8 位。',
+      },
+      400,
+    );
+  }
+
+  const result = await changePassword(ctx, ctx.get('authUser').id, currentPassword, nextPassword);
+
+  if (result === 'user-not-found') {
+    return ctx.json(
+      {
+        result: false,
+        message: 'User not found.',
+      },
+      404,
+    );
+  }
+
+  if (result === 'invalid-password') {
+    return ctx.json(
+      {
+        result: false,
+        message: '当前密码不正确。',
+      },
+      400,
+    );
+  }
+
+  return ctx.json({
+    result: true,
   });
 });
 
@@ -200,6 +293,37 @@ app.put('/api/resume-drafts/:draftId', async (ctx) => {
   return ctx.json({
     result: true,
     ...draft,
+  });
+});
+
+app.delete('/api/resume-drafts/:draftId', async (ctx) => {
+  const authUser = ctx.get('authUser');
+  const draftId = ctx.req.param('draftId');
+  const result = await deleteResumeDraft(ctx, authUser, draftId);
+
+  if (result === 'not-found') {
+    return ctx.json(
+      {
+        result: false,
+        message: 'Resume draft not found.',
+      },
+      404,
+    );
+  }
+
+  if (result === 'forbidden') {
+    return ctx.json(
+      {
+        result: false,
+        message: '你没有权限删除这份草稿。',
+      },
+      403,
+    );
+  }
+
+  return ctx.json({
+    result: true,
+    draftId,
   });
 });
 

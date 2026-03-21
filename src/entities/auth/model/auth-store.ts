@@ -20,6 +20,8 @@ const parseSession = (value: string | null): AuthSessionPayload | null => {
       user: {
         id: payload.user.id,
         email: payload.user.email,
+        displayName: payload.user.displayName ?? payload.user.email,
+        createdAt: typeof payload.user.createdAt === 'number' ? payload.user.createdAt : Date.now(),
       },
     };
   } catch (error) {
@@ -35,6 +37,8 @@ export class AuthStore {
   user: AuthUser | null = null;
 
   authDialogOpen = false;
+
+  accountDrawerOpen = false;
 
   draftsDrawerOpen = false;
 
@@ -70,6 +74,8 @@ export class AuthStore {
     this.token = null;
     this.user = null;
     this.drafts = [];
+    this.authDialogOpen = false;
+    this.accountDrawerOpen = false;
     this.draftsDrawerOpen = false;
 
     if (typeof window !== 'undefined') {
@@ -83,6 +89,14 @@ export class AuthStore {
 
   closeAuthDialog(): void {
     this.authDialogOpen = false;
+  }
+
+  openAccountDrawer(): void {
+    this.accountDrawerOpen = true;
+  }
+
+  closeAccountDrawer(): void {
+    this.accountDrawerOpen = false;
   }
 
   openDraftsDrawer(): void {

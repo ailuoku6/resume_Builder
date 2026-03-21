@@ -1,6 +1,9 @@
 import React from 'react';
 import { Drawer, IconButton } from '@material-ui/core';
 import CloseIcon from '@material-ui/icons/Close';
+import DeleteOutlineIcon from '@material-ui/icons/DeleteOutline';
+import NoteAddIcon from '@material-ui/icons/NoteAdd';
+import PostAddIcon from '@material-ui/icons/PostAdd';
 import RefreshIcon from '@material-ui/icons/Refresh';
 import { observer } from 'kisstate';
 
@@ -11,9 +14,18 @@ import { listCloudResumeDrafts } from '@/shared/api/cloudResume';
 interface CloudDraftDrawerProps {
   activeDraftId: string | null;
   onSelectDraft: (draft: CloudDraftSummary) => void;
+  onDeleteDraft: (draft: CloudDraftSummary) => void;
+  onCreateBlankDraft: () => void;
+  onSaveAsNewDraft: () => void;
 }
 
-const CloudDraftDrawerBase: React.FC<CloudDraftDrawerProps> = ({ activeDraftId, onSelectDraft }) => {
+const CloudDraftDrawerBase: React.FC<CloudDraftDrawerProps> = ({
+  activeDraftId,
+  onSelectDraft,
+  onDeleteDraft,
+  onCreateBlankDraft,
+  onSaveAsNewDraft,
+}) => {
   const [errorText, setErrorText] = React.useState('');
 
   const loadDrafts = React.useCallback(async (): Promise<void> => {
@@ -83,6 +95,26 @@ const CloudDraftDrawerBase: React.FC<CloudDraftDrawerProps> = ({ activeDraftId, 
           当前账号下的草稿会按用户隔离展示，数据库中仅保存加密后的内容。
         </p>
 
+        <div className="cloud-drafts-drawer__toolbar">
+          <button
+            type="button"
+            className="section-list-button section-list-button--primary"
+            onClick={onCreateBlankDraft}
+          >
+            <NoteAddIcon fontSize="small" />
+            新建空白简历
+          </button>
+
+          <button
+            type="button"
+            className="section-list-button section-list-button--secondary"
+            onClick={onSaveAsNewDraft}
+          >
+            <PostAddIcon fontSize="small" />
+            另存为新草稿
+          </button>
+        </div>
+
         {errorText ? <p className="cloud-drafts-drawer__error">{errorText}</p> : null}
 
         <div className="cloud-drafts-drawer__list">
@@ -99,18 +131,49 @@ const CloudDraftDrawerBase: React.FC<CloudDraftDrawerProps> = ({ activeDraftId, 
                 const isActive = draft.draftId === activeDraftId;
 
                 return (
-                  <button
-                    type="button"
+                  <div
                     key={draft.draftId}
                     className={`cloud-drafts-drawer__item${
                       isActive ? ' cloud-drafts-drawer__item--active' : ''
                     }`}
+                    role="button"
+                    tabIndex={0}
                     onClick={() => {
                       onSelectDraft(draft);
                     }}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        onSelectDraft(draft);
+                      }
+                    }}
                   >
-                    <span className="cloud-drafts-drawer__item-name">{draft.name}</span>
+                    <div className="cloud-drafts-drawer__item-top">
+                      <span className="cloud-drafts-drawer__item-name">{draft.name}</span>
+                      <button
+                        type="button"
+                        className="cloud-drafts-drawer__delete"
+                        aria-label="删除草稿"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onDeleteDraft(draft);
+                        }}
+                      >
+                        <DeleteOutlineIcon fontSize="small" />
+                      </button>
+                    </div>
                     <span className="cloud-drafts-drawer__item-meta">
+                      创建于{' '}
+                      {new Date(draft.createdAt).toLocaleString('zh-CN', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </span>
+                    <span className="cloud-drafts-drawer__item-meta">
+                      更新于{' '}
                       {new Date(draft.updatedAt).toLocaleString('zh-CN', {
                         year: 'numeric',
                         month: '2-digit',
@@ -119,7 +182,7 @@ const CloudDraftDrawerBase: React.FC<CloudDraftDrawerProps> = ({ activeDraftId, 
                         minute: '2-digit',
                       })}
                     </span>
-                  </button>
+                  </div>
                 );
               })
             : null}

@@ -1,7 +1,7 @@
 import type { ResumeData } from '../../../src/entities/resume/model/types';
 import { decryptResumeData, encryptResumeData } from '../utils/crypto';
 import type {
-  AuthUser,
+  AuthIdentity,
   Bindings,
   ResumeDraftRecord,
   ResumeDraftResult,
@@ -53,7 +53,7 @@ const resolveDraftName = (data: ResumeData): string => {
 
 export const listResumeDrafts = async (
   ctx: ServiceContext,
-  user: AuthUser,
+  user: AuthIdentity,
 ): Promise<ResumeDraftSummary[]> => {
   const records = await ctx.env.RESUME_DB.prepare(
     `
@@ -80,6 +80,7 @@ export const listResumeDrafts = async (
       return {
         draftId: record.id,
         name: resolveDraftName(data),
+        createdAt: record.created_at,
         updatedAt: record.updated_at,
       };
     }),
@@ -88,7 +89,7 @@ export const listResumeDrafts = async (
 
 export const getResumeDraft = async (
   ctx: ServiceContext,
-  user: AuthUser,
+  user: AuthIdentity,
   draftId: string,
 ): Promise<ResumeDraftResult | null> => {
   const record = await readDraft(ctx.env, user.id, draftId);
@@ -113,7 +114,7 @@ export const getResumeDraft = async (
 
 export const saveResumeDraft = async (
   ctx: ServiceContext,
-  user: AuthUser,
+  user: AuthIdentity,
   draftId: string,
   data: ResumeData,
 ): Promise<ResumeDraftResult | 'forbidden'> => {
@@ -144,4 +145,26 @@ export const saveResumeDraft = async (
     updatedAt: now,
     data,
   };
+};
+
+export const deleteResumeDraft = async (
+  ctx: ServiceContext,
+  user: AuthIdentity,
+  draftId: string,
+): Promise<'forbidden' | 'not-found' | true> => {
+  const ownership = await readDraftOwnership(ctx.env, draftId);
+
+  if (!ownership) {
+    return 'not-found';
+  }
+
+  if (ownership.user_id !== user.id) {
+    return 'forbidden';
+  }
+
+  await ctx.env.RESUME_DB.prepare(`DELETE FROM ${RESUME_DRAFTS_TABLE} WHERE id = ?1 AND user_id = ?2`)
+    .bind(draftId, user.id)
+    .run();
+
+  return true;
 };
