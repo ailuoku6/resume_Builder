@@ -31,7 +31,8 @@
 }
 
 .builder-shell {
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   background:
     radial-gradient(circle at top left, rgba(188, 199, 222, 0.24), transparent 30%),
     linear-gradient(180deg, #fbfcfe 0%, var(--builder-bg) 40%, #eef2f7 100%);
@@ -155,18 +156,21 @@
   display: grid;
   grid-template-columns: minmax(360px, 46%) minmax(420px, 54%);
   gap: 24px;
-  align-items: start;
-  min-height: 100vh;
+  align-items: stretch;
+  height: 100vh;
   padding: 108px 24px 24px;
+  overflow: hidden;
 }
 
 .editor-pane,
 .preview-pane {
   min-height: 0;
+  height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .editor-pane {
-  overflow-y: auto;
   padding-right: 6px;
 }
 
@@ -178,12 +182,11 @@
 }
 
 .preview-pane {
-  position: sticky;
-  top: 108px;
-  align-self: start;
+  padding-right: 6px;
 }
 
 .preview-surface {
+  min-height: 100%;
   padding: 18px;
   border-radius: 28px;
   background-color: #d1d5db;
@@ -646,6 +649,10 @@
   margin-top: 6px;
 }
 
+.section-list-actions {
+  margin-top: 28px;
+}
+
 .section-editor__action,
 .section-list-button,
 .image-picker-button {
@@ -849,12 +856,25 @@
 }
 
 @media (max-width: 1260px) {
+  .builder-shell {
+    height: auto;
+    overflow: visible;
+  }
+
   .builder-workspace {
     grid-template-columns: minmax(320px, 1fr);
+    height: auto;
+    overflow: visible;
   }
 
   .preview-pane {
-    position: static;
+    height: auto;
+    overflow: visible;
+  }
+
+  .editor-pane {
+    height: auto;
+    overflow: visible;
   }
 
   .pdf-viewer {
