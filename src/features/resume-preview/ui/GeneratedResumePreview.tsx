@@ -46,30 +46,36 @@ export const GeneratedResumePreview: React.FC<GeneratedResumePreviewProps> = ({ 
   return (
     <article className="resume-preview-page">
       <header className="resume-preview-hero">
-        {data.avatar ? (
-          <img className="resume-preview-avatar" src={data.avatar} alt={data.name || 'resume avatar'} />
-        ) : null}
+        <div className="resume-preview-hero-main">
+          {data.avatar ? (
+            <img className="resume-preview-avatar" src={data.avatar} alt={data.name || 'resume avatar'} />
+          ) : null}
 
-        <h1 className="resume-preview-name">{data.name || '未命名候选人'}</h1>
-        {data.headline.trim() ? <p className="resume-preview-headline">{data.headline}</p> : null}
+          <div className="resume-preview-hero-content">
+            <h1 className="resume-preview-name">{data.name || '未命名候选人'}</h1>
+            {data.headline.trim() ? <p className="resume-preview-headline">{data.headline}</p> : null}
 
-        {contactItems.length > 0 ? (
-          <div className="resume-preview-contact-list">
-            {contactItems.map((item) => {
-              return (
-                <div key={item.label} className="resume-preview-contact-item">
-                  <span className="resume-preview-contact-label">{item.label}</span>
-                  <span className="resume-preview-contact-value">{item.value}</span>
-                </div>
-              );
-            })}
+            {contactItems.length > 0 ? (
+              <div className="resume-preview-contact-list">
+                {contactItems.map((item) => {
+                  return (
+                    <div key={item.label} className="resume-preview-contact-item">
+                      <span className="resume-preview-contact-label">{item.label}</span>
+                      <span className="resume-preview-contact-value">{item.value}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : null}
           </div>
-        ) : null}
+        </div>
       </header>
 
       {summaryLines.length > 0 ? (
         <section className="resume-preview-section">
-          <h2 className="resume-preview-section-title">Profile / 个人简介</h2>
+          <h2 className="resume-preview-section-title resume-preview-section-title--plain">
+            Profile / 个人简介
+          </h2>
           <div className="resume-preview-section-body">
             {summaryLines.map((line, index) => {
               return (

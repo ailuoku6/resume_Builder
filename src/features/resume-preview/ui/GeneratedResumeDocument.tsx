@@ -34,122 +34,149 @@ Font.registerHyphenationCallback((word) => {
   return Array.from(word).map((char) => char);
 });
 
+const pt = (px: number): number => {
+  return Number((px * 0.75).toFixed(2));
+};
+
+const PDF_PREVIEW_COLORS = {
+  pageText: '#191c1e',
+  primary: '#091426',
+  strongText: '#0f172a',
+  accent: '#2170e4',
+  body: '#455163',
+  muted: '#7b8494',
+  contactLabel: '#72809a',
+  contactBackground: '#f3f6fb',
+  heroDivider: '#dbe5f2',
+  sectionDivider: '#ebecef',
+} as const;
+
 const styles = StyleSheet.create({
   page: {
-    paddingTop: 36,
-    paddingRight: 40,
-    paddingBottom: 42,
-    paddingLeft: 40,
+    paddingTop: pt(36),
+    paddingRight: pt(40),
+    paddingBottom: pt(42),
+    paddingLeft: pt(40),
     fontFamily: 'oppoFont',
     backgroundColor: '#ffffff',
-    color: '#191c1e',
+    color: PDF_PREVIEW_COLORS.pageText,
   },
   hero: {
-    marginBottom: 20,
-    paddingBottom: 18,
-    borderBottomWidth: 1,
-    borderBottomColor: '#dbe5f2',
+    paddingBottom: pt(18),
+    borderBottomWidth: pt(1),
+    borderBottomColor: PDF_PREVIEW_COLORS.heroDivider,
+  },
+  heroMain: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  heroContent: {
+    flex: 1,
   },
   avatar: {
-    width: 78,
-    height: 104,
-    marginBottom: 14,
-    borderRadius: 4,
+    width: pt(78),
+    height: pt(104),
+    marginRight: pt(20),
+    borderRadius: pt(4),
   },
   name: {
-    fontSize: 28,
+    fontSize: pt(36),
     fontWeight: 'bold',
-    color: '#091426',
+    color: PDF_PREVIEW_COLORS.primary,
   },
   headline: {
-    marginTop: 4,
-    fontSize: 10,
+    marginTop: pt(6),
+    fontSize: pt(12),
     fontWeight: 'bold',
-    color: '#2170e4',
+    color: PDF_PREVIEW_COLORS.accent,
     letterSpacing: 1.6,
   },
   contactRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginTop: 14,
+    marginTop: pt(14),
   },
   contactItem: {
-    marginRight: 8,
-    marginBottom: 8,
-    paddingTop: 7,
-    paddingRight: 10,
-    paddingBottom: 7,
-    paddingLeft: 10,
-    borderRadius: 4,
-    backgroundColor: '#f3f6fb',
+    marginRight: pt(8),
+    marginBottom: pt(8),
+    paddingTop: pt(7),
+    paddingRight: pt(10),
+    paddingBottom: pt(7),
+    paddingLeft: pt(10),
+    borderRadius: pt(4),
+    backgroundColor: PDF_PREVIEW_COLORS.contactBackground,
   },
   contactLabel: {
-    fontSize: 7,
+    fontSize: pt(9),
     fontWeight: 'bold',
-    color: '#72809a',
+    color: PDF_PREVIEW_COLORS.contactLabel,
     letterSpacing: 1.2,
   },
   contactValue: {
-    marginTop: 2,
-    fontSize: 10,
-    color: '#0f172a',
+    marginTop: pt(2),
+    fontSize: pt(12),
+    color: PDF_PREVIEW_COLORS.strongText,
   },
   section: {
-    marginTop: 14,
+    marginTop: pt(14),
   },
   sectionTitle: {
-    paddingBottom: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(9, 20, 38, 0.08)',
-    fontSize: 10,
+    paddingBottom: pt(8),
+    borderBottomWidth: pt(1),
+    borderBottomColor: PDF_PREVIEW_COLORS.sectionDivider,
+    fontSize: pt(12),
     fontWeight: 'bold',
-    color: '#091426',
+    color: PDF_PREVIEW_COLORS.primary,
     letterSpacing: 1.1,
   },
+  sectionTitlePlain: {
+    paddingBottom: 0,
+    borderBottomWidth: 0,
+  },
   summaryWrap: {
-    marginTop: 12,
+    marginTop: pt(12),
   },
   summaryLine: {
-    fontSize: 10.5,
-    color: '#455163',
+    fontSize: pt(12),
+    color: PDF_PREVIEW_COLORS.body,
   },
   sectionBody: {
-    marginTop: 14,
+    marginTop: pt(14),
   },
   entryBlock: {
-    marginBottom: 14,
+    marginBottom: pt(14),
   },
   entryHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'baseline',
-    marginBottom: 4,
+    marginBottom: pt(4),
   },
   entryTitle: {
     flex: 1,
-    paddingRight: 14,
-    fontSize: 11.5,
+    paddingRight: pt(14),
+    fontSize: pt(14),
     fontWeight: 'bold',
-    color: '#0f172a',
+    color: PDF_PREVIEW_COLORS.strongText,
   },
   entryMark: {
-    fontSize: 8.5,
-    color: '#7b8494',
+    fontSize: pt(11),
+    color: PDF_PREVIEW_COLORS.muted,
   },
   paragraph: {
-    marginTop: 4,
+    marginTop: pt(4),
   },
   paragraphText: {
-    fontSize: 10,
-    color: '#455163',
+    fontSize: pt(12),
+    color: PDF_PREVIEW_COLORS.body,
   },
   subEntryBlock: {
-    marginTop: 10,
+    marginTop: pt(10),
   },
   emptyText: {
-    marginTop: 12,
-    fontSize: 10,
-    color: '#7b8494',
+    marginTop: pt(12),
+    fontSize: pt(12),
+    color: PDF_PREVIEW_COLORS.muted,
   },
 });
 
@@ -251,27 +278,34 @@ const GeneratedResumeDocument: React.FC<GeneratedResumeDocumentProps> = ({ data 
     <Document>
       <Page size="A4" style={styles.page}>
         <View style={styles.hero}>
-          {data.avatar ? <Image src={data.avatar} style={styles.avatar} /> : null}
-          <Text style={styles.name}>{data.name || '未命名候选人'}</Text>
-          {data.headline.trim() ? <Text style={styles.headline}>{data.headline}</Text> : null}
+          <View style={styles.heroMain}>
+            {data.avatar ? <Image src={data.avatar} style={styles.avatar} /> : null}
 
-          {contactItems.length > 0 ? (
-            <View style={styles.contactRow}>
-              {contactItems.map((item) => {
-                return (
-                  <View key={item.label} style={styles.contactItem}>
-                    <Text style={styles.contactLabel}>{item.label}</Text>
-                    <Text style={styles.contactValue}>{item.value}</Text>
-                  </View>
-                );
-              })}
+            <View style={styles.heroContent}>
+              <Text style={styles.name}>{data.name || '未命名候选人'}</Text>
+              {data.headline.trim() ? <Text style={styles.headline}>{data.headline}</Text> : null}
+
+              {contactItems.length > 0 ? (
+                <View style={styles.contactRow}>
+                  {contactItems.map((item) => {
+                    return (
+                      <View key={item.label} style={styles.contactItem}>
+                        <Text style={styles.contactLabel}>{item.label}</Text>
+                        <Text style={styles.contactValue}>{item.value}</Text>
+                      </View>
+                    );
+                  })}
+                </View>
+              ) : null}
             </View>
-          ) : null}
+          </View>
         </View>
 
         {summaryLines.length > 0 ? (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Profile / 个人简介</Text>
+            <Text style={[styles.sectionTitle, styles.sectionTitlePlain]}>
+              Profile / 个人简介
+            </Text>
             <View style={styles.summaryWrap}>
               {summaryLines.map((line, index) => {
                 return (

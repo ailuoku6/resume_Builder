@@ -232,11 +232,22 @@
   border-bottom: 1px solid #dbe5f2;
 }
 
+.resume-preview-hero-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.resume-preview-hero-content {
+  flex: 1;
+  min-width: 0;
+}
+
 .resume-preview-avatar {
   display: block;
+  flex-shrink: 0;
   width: 78px;
   height: 104px;
-  margin-bottom: 14px;
   border-radius: 4px;
   object-fit: cover;
 }
@@ -291,14 +302,26 @@
   margin-top: 14px;
 }
 
+@media (max-width: 720px) {
+  .resume-preview-hero-main {
+    flex-direction: column;
+    gap: 14px;
+  }
+}
+
 .resume-preview-section-title {
   margin: 0;
   padding-bottom: 8px;
-  border-bottom: 1px solid rgba(9, 20, 38, 0.08);
+  border-bottom: 1px solid #ebecef;
   color: #091426;
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.1em;
+}
+
+.resume-preview-section-title--plain {
+  padding-bottom: 0;
+  border-bottom: none;
 }
 
 .resume-preview-section-body {
