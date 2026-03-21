@@ -1,4 +1,6 @@
-export type ResumeFontPreset = 'oppo' | 'hiragino' | 'songti';
+export type { ResumeFontPreset } from './font-presets';
+
+import type { ResumeFontPreset } from './font-presets';
 
 export interface ResumeEntry {
   id: string;

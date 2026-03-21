@@ -1,25 +1,17 @@
-import type { ResumeData, ResumeFontPreset } from './types';
+import {
+  DEFAULT_FONT_PRESET,
+  FONT_PRESET_OPTIONS,
+  isResumeFontPreset,
+} from './font-presets';
+import type { ResumeData } from './types';
+
+export { DEFAULT_FONT_PRESET, FONT_PRESET_OPTIONS, isResumeFontPreset } from './font-presets';
 
 export const STORAGE_KEY = 'resume-builder:data:v2';
 export const LEGACY_STORAGE_KEY = 'data';
 export const CLOUD_DRAFT_ID_STORAGE_KEY = 'resume-builder:cloud-draft-id';
 
 export const CUSTOM_SECTION_PLACEHOLDER = '请输入大项名称，如教育背景';
-
-export const DEFAULT_FONT_PRESET: ResumeFontPreset = 'oppo';
-
-export const FONT_PRESET_OPTIONS: Array<{
-  value: ResumeFontPreset;
-  label: string;
-}> = [
-  { value: 'oppo', label: 'OPPOSans' },
-  { value: 'hiragino', label: '系统黑体' },
-  { value: 'songti', label: '系统宋体' },
-];
-
-export const isResumeFontPreset = (value: unknown): value is ResumeFontPreset => {
-  return FONT_PRESET_OPTIONS.some((option) => option.value === value);
-};
 
 export const PRESET_SECTIONS: string[] = [
   '在校经历',

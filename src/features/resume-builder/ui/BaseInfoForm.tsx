@@ -14,13 +14,15 @@ interface FieldProps {
   label: string;
   children: React.ReactNode;
   className?: string;
+  hint?: string;
 }
 
-const Field: React.FC<FieldProps> = ({ label, children, className }) => {
+const Field: React.FC<FieldProps> = ({ label, children, className, hint }) => {
   return (
     <label className={`editor-field${className ? ` ${className}` : ''}`}>
       <span className="editor-field__label">{label}</span>
       {children}
+      {hint ? <span className="editor-field__hint">{hint}</span> : null}
     </label>
   );
 };
@@ -87,7 +89,7 @@ const BaseInfoFormBase: React.FC<BaseInfoFormProps> = ({ store }) => {
               </select>
             </Field>
 
-            <Field label="简历字体">
+            <Field label="简历字体" hint="当前仅保留稳定可导出的 OPPOSans，后续新增字体只需扩展字体预设配置。">
               <select
                 className="editor-input editor-select"
                 value={store.fontPreset}

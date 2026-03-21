@@ -1,5 +1,6 @@
 import React from 'react';
 
+import { FONT_PRESET_CONFIG } from '@/entities/resume/model/font-presets';
 import type { ResumeData, ResumeSection } from '@/entities/resume/model/types';
 
 interface GeneratedResumePreviewProps {
@@ -36,6 +37,8 @@ const hasSectionContent = (section: ResumeSection): boolean => {
 export const GeneratedResumePreview: React.FC<GeneratedResumePreviewProps> = ({ data }) => {
   const summaryLines = splitLines(data.summary);
   const visibleSections = data.items.filter(hasSectionContent);
+  const previewFontClassName =
+    FONT_PRESET_CONFIG[data.fontPreset]?.previewClassName ?? FONT_PRESET_CONFIG.oppo.previewClassName;
   const contactItems = [
     { label: 'Phone', value: data.phoneNum },
     { label: 'Email', value: data.email },
@@ -44,7 +47,7 @@ export const GeneratedResumePreview: React.FC<GeneratedResumePreviewProps> = ({ 
   ].filter((item) => item.value.trim());
 
   return (
-    <article className={`resume-preview-page resume-preview-page--${data.fontPreset}`}>
+    <article className={`resume-preview-page ${previewFontClassName}`}>
       <header className="resume-preview-hero">
         <div className="resume-preview-hero-main">
           {data.avatar ? (

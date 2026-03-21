@@ -9,15 +9,14 @@ import {
   View,
 } from '@react-pdf/renderer';
 
-import type { ResumeData, ResumeFontPreset, ResumeSection } from '@/entities/resume/model/types';
+import { FONT_PRESET_CONFIG } from '@/entities/resume/model/font-presets';
+import type { ResumeData, ResumeSection } from '@/entities/resume/model/types';
 
-import hiraginoSansGb from '@/font/Font-Hiragino/HiraginoSansGB.ttc';
 import fontL from '@/font/Font-OPPOSans/OPPOSans-L.ttf';
 import fontM from '@/font/Font-OPPOSans/OPPOSans-M.ttf';
 import fontR from '@/font/Font-OPPOSans/OPPOSans-R.ttf';
-import songtiTtc from '@/font/Font-Songti/Songti.ttc';
 
-import CustomPdfText from './CustomPdfText';
+import CustomPdfText, { buildCopySafePdfTextChildren } from './CustomPdfText';
 
 Font.register({
   family: 'oppoFont',
@@ -25,42 +24,6 @@ Font.register({
     { src: fontM, fontStyle: 'normal', fontWeight: 'bold' },
     { src: fontR, fontStyle: 'normal', fontWeight: 'normal' },
     { src: fontL, fontStyle: 'normal', fontWeight: 'light' },
-  ],
-});
-
-Font.register({
-  family: 'hiraginoSansGb',
-  fonts: [
-    {
-      src: hiraginoSansGb,
-      fontStyle: 'normal',
-      fontWeight: 'normal',
-      postscriptName: 'HiraginoSansGB-W3',
-    },
-    {
-      src: hiraginoSansGb,
-      fontStyle: 'normal',
-      fontWeight: 'bold',
-      postscriptName: 'HiraginoSansGB-W6',
-    },
-  ],
-});
-
-Font.register({
-  family: 'songtiFont',
-  fonts: [
-    {
-      src: songtiTtc,
-      fontStyle: 'normal',
-      fontWeight: 'normal',
-      postscriptName: 'STSongti-SC-Regular',
-    },
-    {
-      src: songtiTtc,
-      fontStyle: 'normal',
-      fontWeight: 'bold',
-      postscriptName: 'STSongti-SC-Bold',
-    },
   ],
 });
 
@@ -88,12 +51,6 @@ const PDF_PREVIEW_COLORS = {
   heroDivider: '#dbe5f2',
   sectionDivider: '#ebecef',
 } as const;
-
-const PDF_FONT_FAMILIES: Record<ResumeFontPreset, string> = {
-  oppo: 'oppoFont',
-  hiragino: 'hiraginoSansGb',
-  songti: 'songtiFont',
-};
 
 const styles = StyleSheet.create({
   page: {
@@ -263,7 +220,7 @@ const renderSection = (section: ResumeSection): React.ReactNode => {
 
   return (
     <View key={section.id} style={styles.section}>
-      <Text style={styles.sectionTitle}>{section.itemName}</Text>
+      <Text style={styles.sectionTitle}>{buildCopySafePdfTextChildren(section.itemName)}</Text>
 
       <View style={styles.sectionBody}>
         {hasEntries
@@ -273,8 +230,10 @@ const renderSection = (section: ResumeSection): React.ReactNode => {
               return (
                 <View key={entryItem.id} style={styles.entryBlock}>
                   <View style={styles.entryHeader}>
-                    <Text style={styles.entryTitle}>{entryItem.title || '未命名条目'}</Text>
-                    <Text style={styles.entryMark}>{entryItem.mark}</Text>
+                    <Text style={styles.entryTitle}>
+                      {buildCopySafePdfTextChildren(entryItem.title || '未命名条目')}
+                    </Text>
+                    <Text style={styles.entryMark}>{buildCopySafePdfTextChildren(entryItem.mark)}</Text>
                   </View>
                   {detailLines.length > 0 ? renderLines(detailLines, entryItem.id) : null}
                 </View>
@@ -290,7 +249,9 @@ const renderSection = (section: ResumeSection): React.ReactNode => {
           </View>
         ) : null}
 
-        {!hasEntries && !hasSubEntries ? <Text style={styles.emptyText}>暂无内容</Text> : null}
+        {!hasEntries && !hasSubEntries ? (
+          <Text style={styles.emptyText}>{buildCopySafePdfTextChildren('暂无内容')}</Text>
+        ) : null}
       </View>
     </View>
   );
@@ -311,7 +272,8 @@ const hasSectionContent = (section: ResumeSection): boolean => {
 const GeneratedResumeDocument: React.FC<GeneratedResumeDocumentProps> = ({ data }) => {
   const summaryLines = splitLines(data.summary);
   const visibleSections = data.items.filter(hasSectionContent);
-  const pageFontFamily = PDF_FONT_FAMILIES[data.fontPreset] ?? PDF_FONT_FAMILIES.oppo;
+  const pageFontFamily =
+    FONT_PRESET_CONFIG[data.fontPreset]?.pdfFontFamily ?? FONT_PRESET_CONFIG.oppo.pdfFontFamily;
   const contactItems = [
     { label: 'Phone', value: data.phoneNum },
     { label: 'Email', value: data.email },
@@ -327,16 +289,18 @@ const GeneratedResumeDocument: React.FC<GeneratedResumeDocumentProps> = ({ data 
             {data.avatar ? <Image src={data.avatar} style={styles.avatar} /> : null}
 
             <View style={styles.heroContent}>
-              <Text style={styles.name}>{data.name || '未命名候选人'}</Text>
-              {data.headline.trim() ? <Text style={styles.headline}>{data.headline}</Text> : null}
+              <Text style={styles.name}>{buildCopySafePdfTextChildren(data.name || '未命名候选人')}</Text>
+              {data.headline.trim() ? (
+                <Text style={styles.headline}>{buildCopySafePdfTextChildren(data.headline)}</Text>
+              ) : null}
 
               {contactItems.length > 0 ? (
                 <View style={styles.contactRow}>
                   {contactItems.map((item) => {
                     return (
                       <View key={item.label} style={styles.contactItem}>
-                        <Text style={styles.contactLabel}>{item.label}</Text>
-                        <Text style={styles.contactValue}>{item.value}</Text>
+                        <Text style={styles.contactLabel}>{buildCopySafePdfTextChildren(item.label)}</Text>
+                        <Text style={styles.contactValue}>{buildCopySafePdfTextChildren(item.value)}</Text>
                       </View>
                     );
                   })}
@@ -349,7 +313,7 @@ const GeneratedResumeDocument: React.FC<GeneratedResumeDocumentProps> = ({ data 
         {summaryLines.length > 0 ? (
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, styles.sectionTitlePlain]}>
-              Profile / 个人简介
+              {buildCopySafePdfTextChildren('Profile / 个人简介')}
             </Text>
             <View style={styles.summaryWrap}>
               {summaryLines.map((line, index) => {

@@ -265,14 +265,6 @@
   font-family: 'ResumeOppo', 'PingFang SC', 'Microsoft YaHei', sans-serif;
 }
 
-.resume-preview-page--hiragino {
-  font-family: 'Hiragino Sans GB', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-}
-
-.resume-preview-page--songti {
-  font-family: 'Songti SC', 'Songti TC', 'STSong', serif;
-}
-
 .resume-preview-hero {
   padding-bottom: 18px;
   border-bottom: 1px solid #dbe5f2;
@@ -482,6 +474,12 @@
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--builder-accent);
+}
+
+.editor-field__hint {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--builder-text-soft);
 }
 
 .editor-input {

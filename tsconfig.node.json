@@ -12,6 +12,7 @@
     "vite.config.ts",
     "functions/**/*.ts",
     "lib/**/*.ts",
+    "src/entities/resume/model/font-presets.ts",
     "src/entities/resume/model/types.ts"
   ]
 }
