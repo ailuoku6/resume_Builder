@@ -16,7 +16,14 @@ import type {
   ResumeSubEntry,
 } from './types';
 
-type EditableBasicField = 'name' | 'sex' | 'liveAddress' | 'phoneNum' | 'email';
+type EditableBasicField =
+  | 'name'
+  | 'headline'
+  | 'summary'
+  | 'sex'
+  | 'liveAddress'
+  | 'phoneNum'
+  | 'email';
 
 type LegacyResumeData = Partial<
   ResumeState & {
@@ -96,6 +103,10 @@ export class ResumeStore implements ResumeState {
 
   name = DEFAULT_RESUME_DATA.name;
 
+  headline = DEFAULT_RESUME_DATA.headline;
+
+  summary = DEFAULT_RESUME_DATA.summary;
+
   sex = DEFAULT_RESUME_DATA.sex;
 
   liveAddress = DEFAULT_RESUME_DATA.liveAddress;
@@ -114,11 +125,13 @@ export class ResumeStore implements ResumeState {
     this.loadFromStorage();
   }
 
-  @computed('avatar', 'name', 'sex', 'liveAddress', 'phoneNum', 'email', 'items')
+  @computed('avatar', 'name', 'headline', 'summary', 'sex', 'liveAddress', 'phoneNum', 'email', 'items')
   get resumeData(): ResumeData {
     return {
       avatar: this.avatar,
       name: this.name,
+      headline: this.headline,
+      summary: this.summary,
       sex: this.sex,
       liveAddress: this.liveAddress,
       phoneNum: this.phoneNum,
@@ -275,6 +288,8 @@ export class ResumeStore implements ResumeState {
   private hydrate(payload: LegacyResumeData): void {
     this.avatar = typeof payload.avatar === 'string' ? payload.avatar : null;
     this.name = toSafeString(payload.name, DEFAULT_RESUME_DATA.name);
+    this.headline = toSafeString(payload.headline, DEFAULT_RESUME_DATA.headline);
+    this.summary = toSafeString(payload.summary, DEFAULT_RESUME_DATA.summary);
     this.sex = toSafeString(payload.sex, DEFAULT_RESUME_DATA.sex);
     this.liveAddress = toSafeString(payload.liveAddress, DEFAULT_RESUME_DATA.liveAddress);
     this.phoneNum = toSafeString(payload.phoneNum, DEFAULT_RESUME_DATA.phoneNum);

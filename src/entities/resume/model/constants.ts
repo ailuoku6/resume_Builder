@@ -22,6 +22,8 @@ export const PRESET_SECTIONS: string[] = [
 export const DEFAULT_RESUME_DATA: ResumeData = {
   avatar: null,
   name: '潜伏',
+  headline: '',
+  summary: '',
   sex: '男',
   liveAddress: '广西省玉林市',
   phoneNum: '17235653225',

@@ -1,7 +1,4 @@
 import React from 'react';
-import Fab from '@material-ui/core/Fab';
-import AddIcon from '@material-ui/icons/Add';
-import DeleteIcon from '@material-ui/icons/Delete';
 
 interface ImagePickerProps {
   width: string;
@@ -18,72 +15,60 @@ export const ImagePicker: React.FC<ImagePickerProps> = ({
   img,
   onChange,
 }) => {
+  const inputId = React.useMemo(() => {
+    return `resume-avatar-${Math.random().toString(36).slice(2, 10)}`;
+  }, []);
+
   return (
-    <div
-      style={{
-        width,
-        height,
-        backgroundColor: '#F0F0F0',
-        borderColor: '#C8C8C8',
-        position: 'relative',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-      }}
-    >
-      <img
-        style={{ width, height, zIndex: 0, position: 'absolute' }}
-        src={img ?? undefined}
-        alt={alt ?? ''}
-      />
+    <div className="image-picker-group">
+      <div className="image-picker-frame" style={{ width, height }}>
+        <input
+          id={inputId}
+          accept="image/*"
+          type="file"
+          className="image-picker-input"
+          onChange={(event) => {
+            const file = event.target.files?.[0];
 
-      <input
-        accept="image/*"
-        type="file"
-        style={{
-          zIndex: 2,
-          width,
-          height,
-          opacity: 0,
-          top: 0,
-          right: 0,
-          bottom: 0,
-          left: 0,
-          position: 'absolute',
-        }}
-        onChange={(event) => {
-          const file = event.target.files?.[0];
+            if (!file) {
+              return;
+            }
 
-          if (!file) {
-            return;
-          }
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
 
-          const reader = new FileReader();
-          reader.readAsDataURL(file);
-
-          reader.onload = (loadEvent) => {
-            onChange((loadEvent.target?.result as string) ?? null);
-          };
-        }}
-      />
-
-      {img ? (
-        <Fab
-          size="small"
-          style={{ zIndex: 3 }}
-          color="secondary"
-          aria-label="删除头像"
-          onClick={() => {
-            onChange(null);
+            reader.onload = (loadEvent) => {
+              onChange((loadEvent.target?.result as string) ?? null);
+            };
           }}
-        >
-          <DeleteIcon />
-        </Fab>
-      ) : (
-        <Fab size="small" style={{ zIndex: 1 }} color="primary" aria-label="上传头像">
-          <AddIcon />
-        </Fab>
-      )}
+        />
+
+        {img ? (
+          <img className="image-picker-preview" src={img} alt={alt ?? ''} />
+        ) : (
+          <div className="image-picker-placeholder">
+            <span className="image-picker-placeholder__title">上传照片</span>
+            <span className="image-picker-placeholder__hint">点击选择图片</span>
+          </div>
+        )}
+      </div>
+
+      <div className="image-picker-actions">
+        <label htmlFor={inputId} className="image-picker-button">
+          {img ? '更换照片' : '选择照片'}
+        </label>
+        {img ? (
+          <button
+            type="button"
+            className="image-picker-button image-picker-button--danger"
+            onClick={() => {
+              onChange(null);
+            }}
+          >
+            移除
+          </button>
+        ) : null}
+      </div>
     </div>
   );
 };

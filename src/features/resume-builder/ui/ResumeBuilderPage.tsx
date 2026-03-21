@@ -1,113 +1,110 @@
 import React from 'react';
-import {
-  AppBar,
-  Container,
-  Fab,
-  IconButton,
-  Paper,
-  Toolbar,
-  Typography,
-} from '@material-ui/core';
-import DoneIcon from '@material-ui/icons/Done';
-import EditIcon from '@material-ui/icons/Edit';
-import MenuIcon from '@material-ui/icons/Menu';
-import SaveIcon from '@material-ui/icons/Save';
-import { PDFViewer } from '@react-pdf/renderer';
+import { PDFDownloadLink } from '@react-pdf/renderer';
 import { observer } from 'kisstate';
 
 import { resumeStore } from '@/entities/resume/model/resume-store';
 import GeneratedResumeDocument from '@/features/resume-preview/ui/GeneratedResumeDocument';
+import { GeneratedResumePreview } from '@/features/resume-preview/ui/GeneratedResumePreview';
 
 import { AddSectionDrawer } from './AddSectionDrawer';
 import { BaseInfoForm } from './BaseInfoForm';
-import { ResumeIdentityCard } from './ResumeIdentityCard';
 import { SectionListEditor } from './SectionListEditor';
 import './ResumeBuilderPage.css';
 
+const sanitizeFileName = (value: string): string => {
+  const normalized = value.trim().replace(/[\\/:*?"<>|]/g, '');
+
+  return normalized || 'resume';
+};
+
+const buildNavigationItems = (): string[] => {
+  const labels = ['个人信息', ...resumeStore.items.map((section) => section.itemName.trim())].filter(Boolean);
+
+  return labels.slice(0, 5);
+};
+
 const ResumeBuilderPageBase: React.FC = () => {
-  const fabColor = '#3388ff';
+  const fileName = `${sanitizeFileName(resumeStore.name)}-resume.pdf`;
+  const navigationItems = buildNavigationItems();
 
   return (
-    <React.Fragment>
-      <div style={{ display: resumeStore.open ? 'flex' : 'block' }}>
-        <AppBar
-          position="fixed"
-          style={{ width: resumeStore.open ? 'calc(100% - 240px)' : '100%' }}
-        >
-          <Toolbar>
-            <IconButton
-              color="inherit"
-              aria-label="open drawer"
-              onClick={() => {
-                resumeStore.toggleDrawer();
-              }}
-            >
-              <MenuIcon />
-            </IconButton>
-            <Typography variant="h6" noWrap>
-              简历制作
-            </Typography>
-          </Toolbar>
-        </AppBar>
+    <div className="builder-shell">
+      <AddSectionDrawer store={resumeStore} />
 
-        <AddSectionDrawer store={resumeStore} />
+      <header className="builder-topbar">
+        <div className="builder-branding">
+          <div className="builder-brand">Resume Atelier</div>
+          <div className="builder-brand-subtitle">左侧编辑，右侧实时预览</div>
+        </div>
 
-        <Container className="resume-container">
-          {resumeStore.edit ? (
-            <React.Fragment>
-              <BaseInfoForm store={resumeStore} />
+        <nav className="builder-nav" aria-label="简历分区">
+          {navigationItems.map((label, index) => {
+            return (
+              <span key={`${label}-${index}`} className="builder-nav__item">
+                {label}
+              </span>
+            );
+          })}
+        </nav>
 
-              <Paper elevation={3} square className="resume-paper">
-                <ResumeIdentityCard store={resumeStore} />
-                <SectionListEditor store={resumeStore} />
-              </Paper>
-            </React.Fragment>
-          ) : (
-            <PDFViewer className="pdf-viewer">
-              <GeneratedResumeDocument data={resumeStore.resumeData} />
-            </PDFViewer>
-          )}
-        </Container>
-      </div>
+        <div className="builder-actions">
+          <button
+            type="button"
+            className="topbar-button topbar-button--ghost"
+            onClick={() => {
+              resumeStore.toggleDrawer();
+            }}
+          >
+            模板分区
+          </button>
 
-      <Fab
-        color="inherit"
-        aria-label="切换编辑"
-        size="small"
-        style={{
-          position: 'fixed',
-          right: 30,
-          bottom: 30,
-          backgroundColor: fabColor,
-        }}
-        onClick={() => {
-          resumeStore.toggleEdit();
-        }}
-      >
-        {resumeStore.edit ? (
-          <DoneIcon style={{ color: '#fff' }} />
-        ) : (
-          <EditIcon style={{ color: '#fff' }} />
-        )}
-      </Fab>
+          <button
+            type="button"
+            className="topbar-button topbar-button--subtle"
+            onClick={() => {
+              resumeStore.saveToStorage();
+            }}
+          >
+            保存草稿
+          </button>
 
-      <Fab
-        color="inherit"
-        aria-label="保存"
-        size="small"
-        style={{
-          position: 'fixed',
-          right: 30,
-          bottom: 80,
-          backgroundColor: fabColor,
-        }}
-        onClick={() => {
-          resumeStore.saveToStorage();
-        }}
-      >
-        <SaveIcon style={{ color: '#fff' }} />
-      </Fab>
-    </React.Fragment>
+          <PDFDownloadLink
+            document={<GeneratedResumeDocument data={resumeStore.resumeData} />}
+            fileName={fileName}
+            className="topbar-button topbar-button--primary"
+          >
+            {({ loading }: { loading: boolean }) => {
+              return loading ? '生成中...' : '导出 PDF';
+            }}
+          </PDFDownloadLink>
+        </div>
+      </header>
+
+      <main className="builder-workspace">
+        <section className="editor-pane">
+          <div className="editor-pane__inner">
+            <BaseInfoForm store={resumeStore} />
+            <SectionListEditor store={resumeStore} />
+          </div>
+        </section>
+
+        <section className="preview-pane">
+          <div className="preview-surface">
+            <div className="preview-surface__header">
+              <div>
+                <p className="preview-surface__eyebrow">Live Preview</p>
+                <h2 className="preview-surface__title">实时预览</h2>
+              </div>
+              <p className="preview-surface__hint">生成简历采用单列排版，便于打印和导出。</p>
+            </div>
+
+            <div className="preview-frame">
+              <GeneratedResumePreview data={resumeStore.resumeData} />
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
   );
 };
 

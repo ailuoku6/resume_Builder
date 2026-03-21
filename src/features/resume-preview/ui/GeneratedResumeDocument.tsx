@@ -9,7 +9,7 @@ import {
   View,
 } from '@react-pdf/renderer';
 
-import type { ResumeData } from '@/entities/resume/model/types';
+import type { ResumeData, ResumeSection } from '@/entities/resume/model/types';
 
 import fontL from '@/font/Font-OPPOSans/OPPOSans-L.ttf';
 import fontM from '@/font/Font-OPPOSans/OPPOSans-M.ttf';
@@ -36,82 +36,120 @@ Font.registerHyphenationCallback((word) => {
 
 const styles = StyleSheet.create({
   page: {
-    padding: 50,
+    paddingTop: 36,
+    paddingRight: 40,
+    paddingBottom: 42,
+    paddingLeft: 40,
     fontFamily: 'oppoFont',
+    backgroundColor: '#ffffff',
+    color: '#191c1e',
   },
-  baseInfoWrap: {
-    flexDirection: 'row',
+  hero: {
+    marginBottom: 20,
+    paddingBottom: 18,
+    borderBottomWidth: 1,
+    borderBottomColor: '#dbe5f2',
   },
-  image: {
-    width: '25mm',
-    height: '35mm',
-    marginRight: 20,
-  },
-  infoDetail: {
-    marginTop: 5,
-    flexDirection: 'column',
-    fontWeight: 'bold',
-  },
-  aline: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
+  avatar: {
+    width: 78,
+    height: 104,
+    marginBottom: 14,
+    borderRadius: 4,
   },
   name: {
+    fontSize: 28,
     fontWeight: 'bold',
-    fontSize: '18',
+    color: '#091426',
   },
-  sex: {
-    marginLeft: 20,
-    fontSize: '11',
-    fontWeight: 'light',
+  headline: {
+    marginTop: 4,
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: '#2170e4',
+    letterSpacing: 1.6,
   },
-  address: {
-    marginBottom: 15,
-    fontSize: '11',
-    fontWeight: 'light',
+  contactRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 14,
   },
-  phone: {
-    fontSize: '11',
-    fontWeight: 'light',
+  contactItem: {
+    marginRight: 8,
+    marginBottom: 8,
+    paddingTop: 7,
+    paddingRight: 10,
+    paddingBottom: 7,
+    paddingLeft: 10,
+    borderRadius: 4,
+    backgroundColor: '#f3f6fb',
   },
-  email: {
-    marginLeft: 50,
-    fontSize: '11',
-    fontWeight: 'light',
+  contactLabel: {
+    fontSize: 7,
+    fontWeight: 'bold',
+    color: '#72809a',
+    letterSpacing: 1.2,
   },
-  itemWrap: {
-    marginTop: 15,
+  contactValue: {
+    marginTop: 2,
+    fontSize: 10,
+    color: '#0f172a',
   },
-  itemName: {
-    paddingLeft: 18,
-    paddingTop: 8,
+  section: {
+    marginTop: 14,
+  },
+  sectionTitle: {
     paddingBottom: 8,
-    backgroundColor: '#e8e8e8',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(9, 20, 38, 0.08)',
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: '#091426',
+    letterSpacing: 1.1,
   },
-  content: {
-    paddingTop: 16,
-    paddingLeft: 20,
+  summaryWrap: {
+    marginTop: 12,
   },
-  entryItem: {
-    marginBottom: 10,
+  summaryLine: {
+    fontSize: 10.5,
+    color: '#455163',
   },
-  entryTitle: {
+  sectionBody: {
+    marginTop: 14,
+  },
+  entryBlock: {
+    marginBottom: 14,
+  },
+  entryHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    alignItems: 'baseline',
+    marginBottom: 4,
   },
-  fontMidBold: {
-    fontSize: '13',
+  entryTitle: {
+    flex: 1,
+    paddingRight: 14,
+    fontSize: 11.5,
     fontWeight: 'bold',
+    color: '#0f172a',
   },
-  fontMid: {
-    fontSize: '13',
-    fontWeight: 'normal',
+  entryMark: {
+    fontSize: 8.5,
+    color: '#7b8494',
   },
-  fontSmaLight: {
-    fontSize: '11',
-    fontWeight: 'light',
-    lineHeight: 15,
+  paragraph: {
+    marginTop: 4,
+  },
+  paragraphText: {
+    fontSize: 10,
+    color: '#455163',
+  },
+  subEntryBlock: {
+    marginTop: 10,
+  },
+  emptyText: {
+    marginTop: 12,
+    fontSize: 10,
+    color: '#7b8494',
   },
 });
 
@@ -119,67 +157,134 @@ interface GeneratedResumeDocumentProps {
   data: ResumeData;
 }
 
+const splitLines = (text: string): string[] => {
+  return text
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+};
+
+const normalizeBulletLine = (line: string): string => {
+  return line.replace(/^[•·\-\*]\s*/, '');
+};
+
+const isBulletLine = (line: string): boolean => {
+  return /^[•·\-\*]\s*/.test(line);
+};
+
+const renderLines = (lines: string[], keyPrefix: string): React.ReactNode => {
+  return lines.map((line, index) => {
+    const bullet = isBulletLine(line);
+    const content = normalizeBulletLine(line);
+    const text = bullet ? `• ${content}` : content;
+
+    return (
+      <View key={`${keyPrefix}-${index}`} style={styles.paragraph}>
+        <CustomPdfText text={text} style={styles.paragraphText as never} />
+      </View>
+    );
+  });
+};
+
+const renderSection = (section: ResumeSection): React.ReactNode => {
+  const hasEntries = section.entry.length > 0;
+  const hasSubEntries = section.subEntry.length > 0;
+
+  return (
+    <View key={section.id} style={styles.section}>
+      <Text style={styles.sectionTitle}>{section.itemName}</Text>
+
+      <View style={styles.sectionBody}>
+        {hasEntries
+          ? section.entry.map((entryItem) => {
+              const detailLines = splitLines(entryItem.detail || '');
+
+              return (
+                <View key={entryItem.id} style={styles.entryBlock}>
+                  <View style={styles.entryHeader}>
+                    <Text style={styles.entryTitle}>{entryItem.title || '未命名条目'}</Text>
+                    <Text style={styles.entryMark}>{entryItem.mark}</Text>
+                  </View>
+                  {detailLines.length > 0 ? renderLines(detailLines, entryItem.id) : null}
+                </View>
+              );
+            })
+          : null}
+
+        {hasSubEntries ? (
+          <View style={styles.subEntryBlock}>
+            {section.subEntry.map((subEntryItem) => {
+              return renderLines(splitLines(subEntryItem.name || ''), subEntryItem.id);
+            })}
+          </View>
+        ) : null}
+
+        {!hasEntries && !hasSubEntries ? <Text style={styles.emptyText}>暂无内容</Text> : null}
+      </View>
+    </View>
+  );
+};
+
+const hasSectionContent = (section: ResumeSection): boolean => {
+  const hasEntryContent = section.entry.some((entryItem) => {
+    return Boolean(entryItem.title.trim() || entryItem.mark.trim() || entryItem.detail.trim());
+  });
+
+  const hasSubEntryContent = section.subEntry.some((subEntryItem) => {
+    return Boolean(subEntryItem.name.trim());
+  });
+
+  return hasEntryContent || hasSubEntryContent;
+};
+
 const GeneratedResumeDocument: React.FC<GeneratedResumeDocumentProps> = ({ data }) => {
+  const summaryLines = splitLines(data.summary);
+  const visibleSections = data.items.filter(hasSectionContent);
+  const contactItems = [
+    { label: 'Phone', value: data.phoneNum },
+    { label: 'Email', value: data.email },
+    { label: 'Location', value: data.liveAddress },
+    { label: 'Gender', value: data.sex },
+  ].filter((item) => item.value.trim());
+
   return (
     <Document>
       <Page size="A4" style={styles.page}>
-        <View style={styles.baseInfoWrap}>
-          {data.avatar ? (
-            <View style={styles.image}>
-              <Image src={data.avatar} />
+        <View style={styles.hero}>
+          {data.avatar ? <Image src={data.avatar} style={styles.avatar} /> : null}
+          <Text style={styles.name}>{data.name || '未命名候选人'}</Text>
+          {data.headline.trim() ? <Text style={styles.headline}>{data.headline}</Text> : null}
+
+          {contactItems.length > 0 ? (
+            <View style={styles.contactRow}>
+              {contactItems.map((item) => {
+                return (
+                  <View key={item.label} style={styles.contactItem}>
+                    <Text style={styles.contactLabel}>{item.label}</Text>
+                    <Text style={styles.contactValue}>{item.value}</Text>
+                  </View>
+                );
+              })}
             </View>
           ) : null}
-
-          <View style={styles.infoDetail}>
-            <View style={styles.aline}>
-              <Text style={styles.name}>{data.name}</Text>
-              <Text style={styles.sex}>{data.sex}</Text>
-            </View>
-            <Text style={styles.address}>{`居住地：${data.liveAddress}`}</Text>
-            <View style={styles.aline}>
-              <Text style={styles.phone}>{`手机：${data.phoneNum}`}</Text>
-              <Text style={styles.email}>{`邮箱：${data.email}`}</Text>
-            </View>
-          </View>
         </View>
 
-        {data.items.map((item) => {
-          return (
-            <View key={item.id} style={styles.itemWrap}>
-              <View style={styles.itemName}>
-                <Text style={styles.fontMidBold}>{item.itemName}</Text>
-              </View>
-
-              <View style={styles.content}>
-                {item.entry.map((entryItem, entryIndex) => {
-                  return (
-                    <View
-                      key={entryItem.id}
-                      style={entryIndex === item.entry.length - 1 ? {} : styles.entryItem}
-                    >
-                      <View style={styles.entryTitle}>
-                        <Text style={styles.fontMid}>{entryItem.title}</Text>
-                        <Text style={styles.fontSmaLight}>{entryItem.mark}</Text>
-                      </View>
-                      <CustomPdfText text={entryItem.detail} style={styles.fontSmaLight as never} />
-                    </View>
-                  );
-                })}
-
-                {item.subEntry.map((subEntryItem, subEntryIndex) => {
-                  return (
-                    <View
-                      key={subEntryItem.id}
-                      style={{ marginBottom: subEntryIndex === item.subEntry.length - 1 ? 0 : 8 }}
-                    >
-                      <CustomPdfText text={subEntryItem.name} style={styles.fontSmaLight as never} />
-                    </View>
-                  );
-                })}
-              </View>
+        {summaryLines.length > 0 ? (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Profile / 个人简介</Text>
+            <View style={styles.summaryWrap}>
+              {summaryLines.map((line, index) => {
+                return (
+                  <View key={`summary-${index}`} style={styles.paragraph}>
+                    <CustomPdfText text={line} style={styles.summaryLine as never} />
+                  </View>
+                );
+              })}
             </View>
-          );
-        })}
+          </View>
+        ) : null}
+
+        {visibleSections.map(renderSection)}
       </Page>
     </Document>
   );

@@ -20,6 +20,8 @@ export interface ResumeSection {
 export interface ResumeData {
   avatar: string | null;
   name: string;
+  headline: string;
+  summary: string;
   sex: string;
   liveAddress: string;
   phoneNum: string;
