@@ -1,3 +1,5 @@
+export type ResumeFontPreset = 'oppo' | 'hiragino' | 'songti';
+
 export interface ResumeEntry {
   id: string;
   title: string;
@@ -22,6 +24,7 @@ export interface ResumeData {
   name: string;
   headline: string;
   summary: string;
+  fontPreset: ResumeFontPreset;
   sex: string;
   liveAddress: string;
   phoneNum: string;

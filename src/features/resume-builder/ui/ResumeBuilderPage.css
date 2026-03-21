@@ -1,3 +1,17 @@
+@font-face {
+  font-family: 'ResumeOppo';
+  src: url('../../../font/Font-OPPOSans/OPPOSans-R.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'ResumeOppo';
+  src: url('../../../font/Font-OPPOSans/OPPOSans-M.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+}
+
 :root {
   --builder-bg: #f7f9fb;
   --builder-surface: #ffffff;
@@ -113,6 +127,12 @@
   transform: translateY(-1px);
 }
 
+.topbar-button:disabled {
+  cursor: wait;
+  transform: none;
+  opacity: 0.8;
+}
+
 .topbar-button--ghost {
   color: var(--builder-primary);
   background: rgba(255, 255, 255, 0.72);
@@ -225,6 +245,18 @@
   padding: 36px 40px 42px;
   background: #fff;
   color: #191c1e;
+}
+
+.resume-preview-page--oppo {
+  font-family: 'ResumeOppo', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+.resume-preview-page--hiragino {
+  font-family: 'Hiragino Sans GB', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+.resume-preview-page--songti {
+  font-family: 'Songti SC', 'Songti TC', 'STSong', serif;
 }
 
 .resume-preview-hero {

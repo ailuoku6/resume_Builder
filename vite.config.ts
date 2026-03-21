@@ -4,6 +4,7 @@ import { nodePolyfills } from 'vite-plugin-node-polyfills';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
+  assetsInclude: ['**/*.ttc'],
   plugins: [
     nodePolyfills({
       globals: {

@@ -9,11 +9,13 @@ import {
   View,
 } from '@react-pdf/renderer';
 
-import type { ResumeData, ResumeSection } from '@/entities/resume/model/types';
+import type { ResumeData, ResumeFontPreset, ResumeSection } from '@/entities/resume/model/types';
 
+import hiraginoSansGb from '@/font/Font-Hiragino/HiraginoSansGB.ttc';
 import fontL from '@/font/Font-OPPOSans/OPPOSans-L.ttf';
 import fontM from '@/font/Font-OPPOSans/OPPOSans-M.ttf';
 import fontR from '@/font/Font-OPPOSans/OPPOSans-R.ttf';
+import songtiTtc from '@/font/Font-Songti/Songti.ttc';
 
 import CustomPdfText from './CustomPdfText';
 
@@ -23,6 +25,42 @@ Font.register({
     { src: fontM, fontStyle: 'normal', fontWeight: 'bold' },
     { src: fontR, fontStyle: 'normal', fontWeight: 'normal' },
     { src: fontL, fontStyle: 'normal', fontWeight: 'light' },
+  ],
+});
+
+Font.register({
+  family: 'hiraginoSansGb',
+  fonts: [
+    {
+      src: hiraginoSansGb,
+      fontStyle: 'normal',
+      fontWeight: 'normal',
+      postscriptName: 'HiraginoSansGB-W3',
+    },
+    {
+      src: hiraginoSansGb,
+      fontStyle: 'normal',
+      fontWeight: 'bold',
+      postscriptName: 'HiraginoSansGB-W6',
+    },
+  ],
+});
+
+Font.register({
+  family: 'songtiFont',
+  fonts: [
+    {
+      src: songtiTtc,
+      fontStyle: 'normal',
+      fontWeight: 'normal',
+      postscriptName: 'STSongti-SC-Regular',
+    },
+    {
+      src: songtiTtc,
+      fontStyle: 'normal',
+      fontWeight: 'bold',
+      postscriptName: 'STSongti-SC-Bold',
+    },
   ],
 });
 
@@ -50,6 +88,12 @@ const PDF_PREVIEW_COLORS = {
   heroDivider: '#dbe5f2',
   sectionDivider: '#ebecef',
 } as const;
+
+const PDF_FONT_FAMILIES: Record<ResumeFontPreset, string> = {
+  oppo: 'oppoFont',
+  hiragino: 'hiraginoSansGb',
+  songti: 'songtiFont',
+};
 
 const styles = StyleSheet.create({
   page: {
@@ -267,6 +311,7 @@ const hasSectionContent = (section: ResumeSection): boolean => {
 const GeneratedResumeDocument: React.FC<GeneratedResumeDocumentProps> = ({ data }) => {
   const summaryLines = splitLines(data.summary);
   const visibleSections = data.items.filter(hasSectionContent);
+  const pageFontFamily = PDF_FONT_FAMILIES[data.fontPreset] ?? PDF_FONT_FAMILIES.oppo;
   const contactItems = [
     { label: 'Phone', value: data.phoneNum },
     { label: 'Email', value: data.email },
@@ -276,7 +321,7 @@ const GeneratedResumeDocument: React.FC<GeneratedResumeDocumentProps> = ({ data 
 
   return (
     <Document>
-      <Page size="A4" style={styles.page}>
+      <Page size="A4" style={[styles.page, { fontFamily: pageFontFamily }]}>
         <View style={styles.hero}>
           <View style={styles.heroMain}>
             {data.avatar ? <Image src={data.avatar} style={styles.avatar} /> : null}

@@ -44,7 +44,7 @@ export const GeneratedResumePreview: React.FC<GeneratedResumePreviewProps> = ({ 
   ].filter((item) => item.value.trim());
 
   return (
-    <article className="resume-preview-page">
+    <article className={`resume-preview-page resume-preview-page--${data.fontPreset}`}>
       <header className="resume-preview-hero">
         <div className="resume-preview-hero-main">
           {data.avatar ? (

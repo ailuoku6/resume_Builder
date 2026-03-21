@@ -1,6 +1,7 @@
 import React from 'react';
 import { observer } from 'kisstate';
 
+import { FONT_PRESET_OPTIONS } from '@/entities/resume/model/constants';
 import type { ResumeStore } from '@/entities/resume/model/resume-store';
 
 import { ImagePicker } from './ImagePicker';
@@ -83,6 +84,24 @@ const BaseInfoFormBase: React.FC<BaseInfoFormProps> = ({ store }) => {
               >
                 <option value="男">男</option>
                 <option value="女">女</option>
+              </select>
+            </Field>
+
+            <Field label="简历字体">
+              <select
+                className="editor-input editor-select"
+                value={store.fontPreset}
+                onChange={(event) => {
+                  store.setBasicField('fontPreset', event.target.value as typeof store.fontPreset);
+                }}
+              >
+                {FONT_PRESET_OPTIONS.map((option) => {
+                  return (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  );
+                })}
               </select>
             </Field>
 

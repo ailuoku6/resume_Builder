@@ -3,6 +3,11 @@ declare module '*.ttf' {
   export default src;
 }
 
+declare module '*.ttc' {
+  const src: string;
+  export default src;
+}
+
 declare module 'react-sortablejs' {
   import * as React from 'react';
 

@@ -4,13 +4,16 @@ import { reorder } from '@/shared/lib/reorder';
 
 import {
   CUSTOM_SECTION_PLACEHOLDER,
+  DEFAULT_FONT_PRESET,
   DEFAULT_RESUME_DATA,
   LEGACY_STORAGE_KEY,
   STORAGE_KEY,
+  isResumeFontPreset,
 } from './constants';
 import type {
   ResumeData,
   ResumeEntry,
+  ResumeFontPreset,
   ResumeSection,
   ResumeState,
   ResumeSubEntry,
@@ -20,6 +23,7 @@ type EditableBasicField =
   | 'name'
   | 'headline'
   | 'summary'
+  | 'fontPreset'
   | 'sex'
   | 'liveAddress'
   | 'phoneNum'
@@ -107,6 +111,8 @@ export class ResumeStore implements ResumeState {
 
   summary = DEFAULT_RESUME_DATA.summary;
 
+  fontPreset = DEFAULT_RESUME_DATA.fontPreset;
+
   sex = DEFAULT_RESUME_DATA.sex;
 
   liveAddress = DEFAULT_RESUME_DATA.liveAddress;
@@ -125,13 +131,25 @@ export class ResumeStore implements ResumeState {
     this.loadFromStorage();
   }
 
-  @computed('avatar', 'name', 'headline', 'summary', 'sex', 'liveAddress', 'phoneNum', 'email', 'items')
+  @computed(
+    'avatar',
+    'name',
+    'headline',
+    'summary',
+    'fontPreset',
+    'sex',
+    'liveAddress',
+    'phoneNum',
+    'email',
+    'items',
+  )
   get resumeData(): ResumeData {
     return {
       avatar: this.avatar,
       name: this.name,
       headline: this.headline,
       summary: this.summary,
+      fontPreset: this.fontPreset,
       sex: this.sex,
       liveAddress: this.liveAddress,
       phoneNum: this.phoneNum,
@@ -140,8 +158,8 @@ export class ResumeStore implements ResumeState {
     };
   }
 
-  setBasicField(field: EditableBasicField, value: string): void {
-    this[field] = value;
+  setBasicField<K extends EditableBasicField>(field: K, value: ResumeStore[K]): void {
+    this[field] = value as this[K];
   }
 
   setAvatar(value: string | null): void {
@@ -290,6 +308,7 @@ export class ResumeStore implements ResumeState {
     this.name = toSafeString(payload.name, DEFAULT_RESUME_DATA.name);
     this.headline = toSafeString(payload.headline, DEFAULT_RESUME_DATA.headline);
     this.summary = toSafeString(payload.summary, DEFAULT_RESUME_DATA.summary);
+    this.fontPreset = isResumeFontPreset(payload.fontPreset) ? payload.fontPreset : DEFAULT_FONT_PRESET;
     this.sex = toSafeString(payload.sex, DEFAULT_RESUME_DATA.sex);
     this.liveAddress = toSafeString(payload.liveAddress, DEFAULT_RESUME_DATA.liveAddress);
     this.phoneNum = toSafeString(payload.phoneNum, DEFAULT_RESUME_DATA.phoneNum);

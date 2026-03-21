@@ -1,5 +1,5 @@
 import React from 'react';
-import { PDFDownloadLink } from '@react-pdf/renderer';
+import { pdf } from '@react-pdf/renderer';
 import { observer } from 'kisstate';
 
 import { resumeStore } from '@/entities/resume/model/resume-store';
@@ -24,8 +24,39 @@ const buildNavigationItems = (): string[] => {
 };
 
 const ResumeBuilderPageBase: React.FC = () => {
-  const fileName = `${sanitizeFileName(resumeStore.name)}-resume.pdf`;
+  const [isExporting, setIsExporting] = React.useState(false);
   const navigationItems = buildNavigationItems();
+
+  const handleExport = async (): Promise<void> => {
+    if (isExporting) {
+      return;
+    }
+
+    const data = resumeStore.resumeData;
+    const exportFileName = `${sanitizeFileName(data.name)}-resume.pdf`;
+
+    setIsExporting(true);
+
+    try {
+      const blob = await pdf(<GeneratedResumeDocument data={data} />).toBlob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+
+      anchor.href = blobUrl;
+      anchor.download = exportFileName;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.setTimeout(() => {
+        window.URL.revokeObjectURL(blobUrl);
+      }, 1000);
+    } catch (error) {
+      console.error('Failed to export resume PDF.', error);
+      window.alert('导出 PDF 失败，请稍后重试。');
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   return (
     <div className="builder-shell">
@@ -68,15 +99,16 @@ const ResumeBuilderPageBase: React.FC = () => {
             保存草稿
           </button>
 
-          <PDFDownloadLink
-            document={<GeneratedResumeDocument data={resumeStore.resumeData} />}
-            fileName={fileName}
+          <button
+            type="button"
             className="topbar-button topbar-button--primary"
-          >
-            {({ loading }: { loading: boolean }) => {
-              return loading ? '生成中...' : '导出 PDF';
+            onClick={() => {
+              void handleExport();
             }}
-          </PDFDownloadLink>
+            disabled={isExporting}
+          >
+            {isExporting ? '生成中...' : '导出 PDF'}
+          </button>
         </div>
       </header>
 
