@@ -1,0 +1,33 @@
+export interface ResumeEntry {
+  id: string;
+  title: string;
+  detail: string;
+  mark: string;
+}
+
+export interface ResumeSubEntry {
+  id: string;
+  name: string;
+}
+
+export interface ResumeSection {
+  id: string;
+  itemName: string;
+  entry: ResumeEntry[];
+  subEntry: ResumeSubEntry[];
+}
+
+export interface ResumeData {
+  avatar: string | null;
+  name: string;
+  sex: string;
+  liveAddress: string;
+  phoneNum: string;
+  email: string;
+  items: ResumeSection[];
+}
+
+export interface ResumeState extends ResumeData {
+  edit: boolean;
+  open: boolean;
+}

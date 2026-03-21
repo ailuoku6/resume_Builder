@@ -1,0 +1,114 @@
+.resume-container {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  padding-top: 100px;
+}
+
+.resume-paper {
+  position: relative;
+  width: 210mm;
+  padding: 60px;
+}
+
+.base-info-wrap {
+  display: flex;
+  flex-direction: row;
+}
+
+.info-detail {
+  margin-left: 20px;
+  margin-top: 5px;
+  display: flex;
+  flex-direction: column;
+  font-weight: bolder;
+}
+
+.aline {
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+}
+
+.name {
+  font-weight: bold;
+  font-size: 30px;
+}
+
+.sex {
+  margin-left: 20px;
+}
+
+.address {
+  margin-bottom: 15px;
+}
+
+.email {
+  margin-left: 50px;
+}
+
+.section-wrap {
+  margin-top: 15px;
+}
+
+.section-name {
+  padding-left: 18px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  background-color: #e8e8e8;
+}
+
+.content {
+  padding: 16px 0 0 20px;
+}
+
+.entry-title {
+  display: flex;
+  justify-content: space-between;
+}
+
+.entry-item {
+  margin-bottom: 20px;
+}
+
+.full-input {
+  width: 80%;
+}
+
+.sortable-ghost {
+  opacity: 0.5;
+  background: #c8ebfb;
+}
+
+.pdf-viewer {
+  width: 100% !important;
+  height: 90vh;
+}
+
+.inline-actions {
+  display: flex;
+  align-items: center;
+}
+
+.section-list-wrap {
+  position: relative;
+  padding-bottom: 60px;
+}
+
+.floating-add {
+  right: 50%;
+  bottom: 6px;
+  display: inline-block;
+  position: absolute;
+}
+
+@media (max-width: 768px) {
+  .resume-paper {
+    width: 100%;
+    padding: 20px;
+  }
+
+  .pdf-viewer {
+    height: 85vh;
+  }
+}
