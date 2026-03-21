@@ -2,6 +2,7 @@ import type { ResumeData, ResumeFontPreset } from './types';
 
 export const STORAGE_KEY = 'resume-builder:data:v2';
 export const LEGACY_STORAGE_KEY = 'data';
+export const CLOUD_DRAFT_ID_STORAGE_KEY = 'resume-builder:cloud-draft-id';
 
 export const CUSTOM_SECTION_PLACEHOLDER = '请输入大项名称，如教育背景';
 

@@ -2,9 +2,16 @@ import React from 'react';
 import { pdf } from '@react-pdf/renderer';
 import { observer } from 'kisstate';
 
+import { authStore } from '@/entities/auth/model/auth-store';
+import type { CloudDraftSummary } from '@/entities/auth/model/types';
+import { AuthDialog } from '@/features/auth/ui/AuthDialog';
+import { CloudDraftDrawer } from '@/features/auth/ui/CloudDraftDrawer';
 import { resumeStore } from '@/entities/resume/model/resume-store';
 import GeneratedResumeDocument from '@/features/resume-preview/ui/GeneratedResumeDocument';
 import { GeneratedResumePreview } from '@/features/resume-preview/ui/GeneratedResumePreview';
+import { loadAuthSession } from '@/shared/api/auth';
+import { loadCloudResumeDraft, saveCloudResumeDraft } from '@/shared/api/cloudResume';
+import { ApiRequestError } from '@/shared/api/http';
 
 import { AddSectionDrawer } from './AddSectionDrawer';
 import { BaseInfoForm } from './BaseInfoForm';
@@ -25,7 +32,163 @@ const buildNavigationItems = (): string[] => {
 
 const ResumeBuilderPageBase: React.FC = () => {
   const [isExporting, setIsExporting] = React.useState(false);
+  const [isSavingDraft, setIsSavingDraft] = React.useState(false);
+  const [saveLabel, setSaveLabel] = React.useState('保存草稿');
   const navigationItems = buildNavigationItems();
+  const saveLabelTimerRef = React.useRef<number | null>(null);
+
+  React.useEffect(() => {
+    if (!authStore.token) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const verifySession = async (): Promise<void> => {
+      try {
+        const user = await loadAuthSession();
+
+        if (cancelled) {
+          return;
+        }
+
+        authStore.setSession(authStore.token as string, user);
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        if (error instanceof ApiRequestError && error.status === 401) {
+          authStore.clearSession();
+          resumeStore.setCloudDraftId(null);
+        }
+      }
+    };
+
+    void verifySession();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  React.useEffect(() => {
+    return () => {
+      if (saveLabelTimerRef.current !== null) {
+        window.clearTimeout(saveLabelTimerRef.current);
+      }
+    };
+  }, []);
+
+  React.useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const draftId = params.get('draft');
+
+    if (!draftId || draftId === resumeStore.cloudDraftId) {
+      return;
+    }
+
+    if (!authStore.isAuthenticated) {
+      authStore.openAuthDialog();
+      return;
+    }
+
+    let cancelled = false;
+
+    const syncDraftFromCloud = async (): Promise<void> => {
+      try {
+        const draft = await loadCloudResumeDraft(draftId);
+
+        if (cancelled) {
+          return;
+        }
+
+        resumeStore.applyResumeData(draft.data);
+        resumeStore.setCloudDraftId(draft.draftId);
+        setSaveLabel('已加载云端草稿');
+      } catch (error) {
+        if (error instanceof ApiRequestError && error.status === 401) {
+          authStore.clearSession();
+          authStore.openAuthDialog();
+        }
+
+        console.warn('Failed to load cloud resume draft.', error);
+      } finally {
+        if (cancelled) {
+          return;
+        }
+
+        if (saveLabelTimerRef.current !== null) {
+          window.clearTimeout(saveLabelTimerRef.current);
+        }
+
+        saveLabelTimerRef.current = window.setTimeout(() => {
+          setSaveLabel('保存草稿');
+        }, 2400);
+      }
+    };
+
+    void syncDraftFromCloud();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authStore.isAuthenticated]);
+
+  const updateSaveLabel = (value: string, timeout = 2400): void => {
+    setSaveLabel(value);
+
+    if (saveLabelTimerRef.current !== null) {
+      window.clearTimeout(saveLabelTimerRef.current);
+    }
+
+    saveLabelTimerRef.current = window.setTimeout(() => {
+      setSaveLabel('保存草稿');
+    }, timeout);
+  };
+
+  const syncDraftUrl = (draftId: string): void => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const url = new URL(window.location.href);
+    url.searchParams.set('draft', draftId);
+    window.history.replaceState({}, '', url.toString());
+  };
+
+  const clearDraftUrl = (): void => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const url = new URL(window.location.href);
+    url.searchParams.delete('draft');
+    window.history.replaceState({}, '', url.toString());
+  };
+
+  const handleLoadDraft = async (draftId: string): Promise<void> => {
+    try {
+      const draft = await loadCloudResumeDraft(draftId);
+
+      resumeStore.applyResumeData(draft.data);
+      resumeStore.setCloudDraftId(draft.draftId);
+      syncDraftUrl(draft.draftId);
+      updateSaveLabel('已切换云端草稿');
+      authStore.closeDraftsDrawer();
+    } catch (error) {
+      if (error instanceof ApiRequestError && error.status === 401) {
+        authStore.clearSession();
+        authStore.openAuthDialog();
+      }
+
+      window.alert(error instanceof Error ? error.message : '加载云端草稿失败。');
+    }
+  };
 
   const handleExport = async (): Promise<void> => {
     if (isExporting) {
@@ -58,9 +221,58 @@ const ResumeBuilderPageBase: React.FC = () => {
     }
   };
 
+  const handleSave = async (): Promise<void> => {
+    if (isSavingDraft) {
+      return;
+    }
+
+    resumeStore.saveToStorage();
+
+    if (!authStore.isAuthenticated) {
+      updateSaveLabel('已保存到本地');
+      authStore.openAuthDialog();
+      return;
+    }
+
+    setIsSavingDraft(true);
+    setSaveLabel('保存中...');
+
+    try {
+      const draft = await saveCloudResumeDraft(resumeStore.resumeData, resumeStore.cloudDraftId);
+
+      resumeStore.setCloudDraftId(draft.draftId);
+      syncDraftUrl(draft.draftId);
+      updateSaveLabel('已保存到云端');
+    } catch (error) {
+      if (error instanceof ApiRequestError && error.status === 401) {
+        authStore.clearSession();
+        authStore.openAuthDialog();
+      }
+
+      console.warn('Failed to save resume draft to Cloudflare backend.', error);
+      updateSaveLabel('已保存到本地');
+    } finally {
+      setIsSavingDraft(false);
+    }
+  };
+
+  const handleLogout = (): void => {
+    authStore.clearSession();
+    resumeStore.setCloudDraftId(null);
+    clearDraftUrl();
+    updateSaveLabel('已退出登录');
+  };
+
   return (
     <div className="builder-shell">
       <AddSectionDrawer store={resumeStore} />
+      <AuthDialog />
+      <CloudDraftDrawer
+        activeDraftId={resumeStore.cloudDraftId}
+        onSelectDraft={(draft: CloudDraftSummary) => {
+          void handleLoadDraft(draft.draftId);
+        }}
+      />
 
       <header className="builder-topbar">
         <div className="builder-branding">
@@ -79,6 +291,44 @@ const ResumeBuilderPageBase: React.FC = () => {
         </nav>
 
         <div className="builder-actions">
+          {authStore.isAuthenticated ? (
+            <>
+              <button type="button" className="topbar-button topbar-button--account">
+                {authStore.user?.email}
+              </button>
+
+              <button
+                type="button"
+                className="topbar-button topbar-button--ghost"
+                onClick={() => {
+                  authStore.openDraftsDrawer();
+                }}
+              >
+                我的草稿
+              </button>
+
+              <button
+                type="button"
+                className="topbar-button topbar-button--subtle"
+                onClick={() => {
+                  handleLogout();
+                }}
+              >
+                退出登录
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              className="topbar-button topbar-button--ghost"
+              onClick={() => {
+                authStore.openAuthDialog();
+              }}
+            >
+              登录 / 注册
+            </button>
+          )}
+
           <button
             type="button"
             className="topbar-button topbar-button--ghost"
@@ -93,10 +343,11 @@ const ResumeBuilderPageBase: React.FC = () => {
             type="button"
             className="topbar-button topbar-button--subtle"
             onClick={() => {
-              resumeStore.saveToStorage();
+              void handleSave();
             }}
+            disabled={isSavingDraft}
           >
-            保存草稿
+            {saveLabel}
           </button>
 
           <button

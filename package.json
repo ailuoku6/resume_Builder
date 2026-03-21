@@ -5,14 +5,17 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
-    "preview": "vite preview"
+    "build": "tsc -b && vite build && mkdir -p dist/functions dist/lib && cp -R functions/. dist/functions && cp -R lib/. dist/lib",
+    "preview": "vite preview",
+    "preview:cloudflare": "wrangler pages dev dist",
+    "db:migrate:local": "wrangler d1 execute RESUME_DB --local --file=./migrations/0001_resume_drafts.sql && wrangler d1 execute RESUME_DB --local --file=./migrations/0002_users_and_secure_drafts.sql"
   },
   "dependencies": {
     "@material-ui/core": "^4.9.5",
     "@material-ui/icons": "^4.9.1",
     "@react-pdf/renderer": "^1.6.8",
     "clsx": "^1.1.0",
+    "hono": "^4.12.8",
     "kisstate": "^1.1.2",
     "react": "^16.13.0",
     "react-dom": "^16.13.0",
@@ -20,12 +23,14 @@
     "sortablejs": "^1.6.1"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260317.1",
     "@types/node": "^24.7.2",
     "@types/react": "^16.14.67",
     "@types/react-dom": "^16.9.25",
     "@vitejs/plugin-react": "^5.1.0",
     "typescript": "^5.8.2",
     "vite": "^7.1.9",
-    "vite-plugin-node-polyfills": "^0.25.0"
+    "vite-plugin-node-polyfills": "^0.25.0",
+    "wrangler": "^4.76.0"
   }
 }

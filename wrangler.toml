@@ -1,0 +1,10 @@
+name = "resume-builder"
+pages_build_output_dir = "dist"
+compatibility_date = "2026-03-22"
+compatibility_flags = ["nodejs_compat"]
+
+[[d1_databases]]
+binding = "RESUME_DB"
+database_name = "resume-builder"
+database_id = "replace-with-your-d1-database-id"
+preview_database_id = "replace-with-your-preview-d1-database-id"

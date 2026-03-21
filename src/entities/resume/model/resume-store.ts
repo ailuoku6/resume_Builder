@@ -3,6 +3,7 @@ import { ObservableClass, computed } from 'kisstate';
 import { reorder } from '@/shared/lib/reorder';
 
 import {
+  CLOUD_DRAFT_ID_STORAGE_KEY,
   CUSTOM_SECTION_PLACEHOLDER,
   DEFAULT_FONT_PRESET,
   DEFAULT_RESUME_DATA,
@@ -103,6 +104,8 @@ const createSection = (itemName = CUSTOM_SECTION_PLACEHOLDER): ResumeSection => 
 
 @ObservableClass
 export class ResumeStore implements ResumeState {
+  cloudDraftId: string | null = null;
+
   avatar: string | null = DEFAULT_RESUME_DATA.avatar;
 
   name = DEFAULT_RESUME_DATA.name;
@@ -129,6 +132,7 @@ export class ResumeStore implements ResumeState {
 
   constructor() {
     this.loadFromStorage();
+    this.loadCloudDraftId();
   }
 
   @computed(
@@ -164,6 +168,21 @@ export class ResumeStore implements ResumeState {
 
   setAvatar(value: string | null): void {
     this.avatar = value;
+  }
+
+  setCloudDraftId(value: string | null): void {
+    this.cloudDraftId = value;
+
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    if (value) {
+      localStorage.setItem(CLOUD_DRAFT_ID_STORAGE_KEY, value);
+      return;
+    }
+
+    localStorage.removeItem(CLOUD_DRAFT_ID_STORAGE_KEY);
   }
 
   toggleDrawer(): void {
@@ -284,6 +303,11 @@ export class ResumeStore implements ResumeState {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(this.resumeData));
   }
 
+  applyResumeData(payload: ResumeData): void {
+    this.hydrate(payload);
+    this.saveToStorage();
+  }
+
   loadFromStorage(): void {
     if (typeof window === 'undefined') {
       return;
@@ -301,6 +325,14 @@ export class ResumeStore implements ResumeState {
     } catch (error) {
       console.warn('Failed to parse saved resume data.', error);
     }
+  }
+
+  private loadCloudDraftId(): void {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    this.cloudDraftId = localStorage.getItem(CLOUD_DRAFT_ID_STORAGE_KEY);
   }
 
   private hydrate(payload: LegacyResumeData): void {
