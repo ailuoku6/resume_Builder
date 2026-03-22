@@ -3,6 +3,7 @@ import { observer } from 'kisstate';
 
 import { FONT_PRESET_OPTIONS } from '@/entities/resume/model/constants';
 import type { ResumeStore } from '@/entities/resume/model/resume-store';
+import { ImeInput, ImeTextarea } from '@/shared/ui/ImeInput';
 
 import { ImagePicker } from './ImagePicker';
 
@@ -55,23 +56,23 @@ const BaseInfoFormBase: React.FC<BaseInfoFormProps> = ({ store }) => {
         <div className="identity-layout__fields">
           <div className="editor-form-grid editor-form-grid--two">
             <Field label="姓名">
-              <input
+              <ImeInput
                 className="editor-input"
                 placeholder="陈默"
                 value={store.name}
-                onChange={(event) => {
-                  store.setBasicField('name', event.target.value);
+                onValueChange={(value) => {
+                  store.setBasicField('name', value);
                 }}
               />
             </Field>
 
             <Field label="目标岗位">
-              <input
+              <ImeInput
                 className="editor-input"
                 placeholder="高级产品设计师"
                 value={store.headline}
-                onChange={(event) => {
-                  store.setBasicField('headline', event.target.value);
+                onValueChange={(value) => {
+                  store.setBasicField('headline', value);
                 }}
               />
             </Field>
@@ -108,47 +109,47 @@ const BaseInfoFormBase: React.FC<BaseInfoFormProps> = ({ store }) => {
             </Field>
 
             <Field label="居住地">
-              <input
+              <ImeInput
                 className="editor-input"
                 placeholder="北京 / 上海 / 远程"
                 value={store.liveAddress}
-                onChange={(event) => {
-                  store.setBasicField('liveAddress', event.target.value);
+                onValueChange={(value) => {
+                  store.setBasicField('liveAddress', value);
                 }}
               />
             </Field>
 
             <Field label="联系电话">
-              <input
+              <ImeInput
                 className="editor-input"
                 placeholder="+86 138 0000 0000"
                 value={store.phoneNum}
-                onChange={(event) => {
-                  store.setBasicField('phoneNum', event.target.value);
+                onValueChange={(value) => {
+                  store.setBasicField('phoneNum', value);
                 }}
               />
             </Field>
 
             <Field label="电子邮箱">
-              <input
+              <ImeInput
                 className="editor-input"
                 placeholder="name@example.com"
                 value={store.email}
-                onChange={(event) => {
-                  store.setBasicField('email', event.target.value);
+                onValueChange={(value) => {
+                  store.setBasicField('email', value);
                 }}
               />
             </Field>
           </div>
 
           <Field label="个人简介" className="editor-field--full">
-            <textarea
+            <ImeTextarea
               className="editor-input editor-textarea"
               rows={5}
               placeholder="用 2-4 句话概括你的方向、优势和代表成果。"
               value={store.summary}
-              onChange={(event) => {
-                store.setBasicField('summary', event.target.value);
+              onValueChange={(value) => {
+                store.setBasicField('summary', value);
               }}
             />
           </Field>

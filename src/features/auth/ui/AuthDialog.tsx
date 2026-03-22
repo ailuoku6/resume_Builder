@@ -4,6 +4,7 @@ import { observer } from 'kisstate';
 
 import { authStore } from '@/entities/auth/model/auth-store';
 import { loginWithEmail, signUpWithEmail } from '@/shared/api/auth';
+import { ImeInput } from '@/shared/ui/ImeInput';
 
 type AuthMode = 'login' | 'signup';
 
@@ -123,26 +124,26 @@ const AuthDialogBase: React.FC = () => {
 
         <label className="editor-field auth-dialog__field">
           <span className="editor-field__label">邮箱</span>
-          <input
+          <ImeInput
             className="editor-input"
             type="email"
             placeholder="name@example.com"
             value={email}
-            onChange={(event) => {
-              setEmail(event.target.value);
+            onValueChange={(value) => {
+              setEmail(value);
             }}
           />
         </label>
 
         <label className="editor-field auth-dialog__field">
           <span className="editor-field__label">密码</span>
-          <input
+          <ImeInput
             className="editor-input"
             type="password"
             placeholder="至少 8 位"
             value={password}
-            onChange={(event) => {
-              setPassword(event.target.value);
+            onValueChange={(value) => {
+              setPassword(value);
             }}
           />
         </label>
@@ -150,13 +151,13 @@ const AuthDialogBase: React.FC = () => {
         {mode === 'signup' ? (
           <label className="editor-field auth-dialog__field">
             <span className="editor-field__label">确认密码</span>
-            <input
+            <ImeInput
               className="editor-input"
               type="password"
               placeholder="再次输入密码"
               value={confirmPassword}
-              onChange={(event) => {
-                setConfirmPassword(event.target.value);
+              onValueChange={(value) => {
+                setConfirmPassword(value);
               }}
             />
           </label>

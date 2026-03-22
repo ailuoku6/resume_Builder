@@ -546,6 +546,7 @@
   color: #aab1bf;
   font-size: 18px;
   line-height: 1;
+  cursor: grab;
 }
 
 .section-editor__title-input {
@@ -619,6 +620,19 @@
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 16px;
+}
+
+.entry-editor-card__top-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.entry-editor-card__drag {
+  color: #aab1bf;
+  font-size: 18px;
+  line-height: 1;
+  cursor: grab;
 }
 
 .entry-editor-card__badge {

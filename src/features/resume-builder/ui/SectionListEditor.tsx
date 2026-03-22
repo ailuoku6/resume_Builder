@@ -41,6 +41,7 @@ const SectionListEditorBase: React.FC<SectionListEditorProps> = ({ store }) => {
         options={{
           animation: 180,
           easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+          handle: '.section-editor__drag',
           ghostClass: 'sortable-ghost',
         }}
       >

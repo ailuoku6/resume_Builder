@@ -5,6 +5,7 @@ import { observer } from 'kisstate';
 
 import { authStore } from '@/entities/auth/model/auth-store';
 import { changePassword, updateProfile } from '@/shared/api/auth';
+import { ImeInput } from '@/shared/ui/ImeInput';
 
 interface AccountDrawerProps {
   onLogout: () => void;
@@ -114,11 +115,11 @@ const AccountDrawerBase: React.FC<AccountDrawerProps> = ({ onLogout }) => {
         <div className="account-drawer__section">
           <label className="editor-field">
             <span className="editor-field__label">显示名称</span>
-            <input
+            <ImeInput
               className="editor-input"
               value={displayName}
-              onChange={(event) => {
-                setDisplayName(event.target.value);
+              onValueChange={(value) => {
+                setDisplayName(value);
               }}
             />
           </label>
@@ -156,36 +157,36 @@ const AccountDrawerBase: React.FC<AccountDrawerProps> = ({ onLogout }) => {
 
           <label className="editor-field">
             <span className="editor-field__label">当前密码</span>
-            <input
+            <ImeInput
               className="editor-input"
               type="password"
               value={currentPassword}
-              onChange={(event) => {
-                setCurrentPassword(event.target.value);
+              onValueChange={(value) => {
+                setCurrentPassword(value);
               }}
             />
           </label>
 
           <label className="editor-field">
             <span className="editor-field__label">新密码</span>
-            <input
+            <ImeInput
               className="editor-input"
               type="password"
               value={nextPassword}
-              onChange={(event) => {
-                setNextPassword(event.target.value);
+              onValueChange={(value) => {
+                setNextPassword(value);
               }}
             />
           </label>
 
           <label className="editor-field">
             <span className="editor-field__label">确认新密码</span>
-            <input
+            <ImeInput
               className="editor-input"
               type="password"
               value={confirmPassword}
-              onChange={(event) => {
-                setConfirmPassword(event.target.value);
+              onValueChange={(value) => {
+                setConfirmPassword(value);
               }}
             />
           </label>

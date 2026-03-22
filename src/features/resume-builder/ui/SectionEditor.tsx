@@ -5,6 +5,7 @@ import ReactSortable from 'react-sortablejs';
 
 import type { ResumeStore } from '@/entities/resume/model/resume-store';
 import type { ResumeSection } from '@/entities/resume/model/types';
+import { ImeInput, ImeTextarea } from '@/shared/ui/ImeInput';
 
 interface SectionEditorProps {
   store: ResumeStore;
@@ -34,12 +35,12 @@ const SectionEditorBase: React.FC<SectionEditorProps> = ({ store, section }) => 
       <div className="section-editor__header">
         <div className="section-editor__title-row">
           <span className="section-editor__drag">⋮⋮</span>
-          <input
+          <ImeInput
             className="section-editor__title-input"
             value={section.itemName}
             placeholder="输入分区标题"
-            onChange={(event) => {
-              store.updateSectionName(section.id, event.target.value);
+            onValueChange={(value) => {
+              store.updateSectionName(section.id, value);
             }}
           />
         </div>
@@ -75,6 +76,7 @@ const SectionEditorBase: React.FC<SectionEditorProps> = ({ store, section }) => 
         options={{
           animation: 180,
           easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+          handle: '.entry-editor-card__drag',
           ghostClass: 'sortable-ghost',
         }}
       >
@@ -82,7 +84,12 @@ const SectionEditorBase: React.FC<SectionEditorProps> = ({ store, section }) => 
           return (
             <div key={entryItem.id} className="entry-editor-card">
               <div className="entry-editor-card__top">
-                <span className="entry-editor-card__badge">经历条目</span>
+                <div className="entry-editor-card__top-meta">
+                  <span className="entry-editor-card__drag" aria-hidden="true">
+                    ⋮⋮
+                  </span>
+                  <span className="entry-editor-card__badge">经历条目</span>
+                </div>
                 <button
                   type="button"
                   className="entry-editor-card__remove"
@@ -97,13 +104,13 @@ const SectionEditorBase: React.FC<SectionEditorProps> = ({ store, section }) => 
               <div className="editor-form-grid editor-form-grid--two">
                 <label className="editor-field">
                   <span className="editor-field__label">标题</span>
-                  <input
+                  <ImeInput
                     className="editor-input"
                     placeholder="公司 / 学校 / 项目名称"
                     value={entryItem.title}
-                    onChange={(event) => {
+                    onValueChange={(value) => {
                       store.updateEntry(section.id, entryItem.id, {
-                        title: event.target.value,
+                        title: value,
                       });
                     }}
                   />
@@ -111,13 +118,13 @@ const SectionEditorBase: React.FC<SectionEditorProps> = ({ store, section }) => 
 
                 <label className="editor-field">
                   <span className="editor-field__label">时间 / 标记</span>
-                  <input
+                  <ImeInput
                     className="editor-input"
                     placeholder="2021.06 - 至今"
                     value={entryItem.mark}
-                    onChange={(event) => {
+                    onValueChange={(value) => {
                       store.updateEntry(section.id, entryItem.id, {
-                        mark: event.target.value,
+                        mark: value,
                       });
                     }}
                   />
@@ -126,14 +133,14 @@ const SectionEditorBase: React.FC<SectionEditorProps> = ({ store, section }) => 
 
               <label className="editor-field editor-field--full">
                 <span className="editor-field__label">描述内容</span>
-                <textarea
+                <ImeTextarea
                   className="editor-input editor-textarea"
                   rows={4}
                   placeholder="描述职责、项目结果或关键亮点。支持多行输入。"
                   value={entryItem.detail}
-                  onChange={(event) => {
+                  onValueChange={(value) => {
                     store.updateEntry(section.id, entryItem.id, {
-                      detail: event.target.value,
+                      detail: value,
                     });
                   }}
                 />
@@ -156,6 +163,7 @@ const SectionEditorBase: React.FC<SectionEditorProps> = ({ store, section }) => 
         options={{
           animation: 180,
           easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+          handle: '.entry-editor-card__drag',
           ghostClass: 'sortable-ghost',
         }}
       >
@@ -163,9 +171,14 @@ const SectionEditorBase: React.FC<SectionEditorProps> = ({ store, section }) => 
           return (
             <div key={subEntryItem.id} className="entry-editor-card entry-editor-card--compact">
               <div className="entry-editor-card__top">
-                <span className="entry-editor-card__badge entry-editor-card__badge--secondary">
-                  列表项
-                </span>
+                <div className="entry-editor-card__top-meta">
+                  <span className="entry-editor-card__drag" aria-hidden="true">
+                    ⋮⋮
+                  </span>
+                  <span className="entry-editor-card__badge entry-editor-card__badge--secondary">
+                    列表项
+                  </span>
+                </div>
                 <button
                   type="button"
                   className="entry-editor-card__remove"
@@ -179,13 +192,13 @@ const SectionEditorBase: React.FC<SectionEditorProps> = ({ store, section }) => 
 
               <label className="editor-field editor-field--full">
                 <span className="editor-field__label">列表内容</span>
-                <textarea
+                <ImeTextarea
                   className="editor-input editor-textarea"
                   rows={3}
                   placeholder="适合填写技能清单、项目亮点、奖项列表等简短内容。"
                   value={subEntryItem.name}
-                  onChange={(event) => {
-                    store.updateSubEntry(section.id, subEntryItem.id, event.target.value);
+                  onValueChange={(value) => {
+                    store.updateSubEntry(section.id, subEntryItem.id, value);
                   }}
                 />
               </label>
