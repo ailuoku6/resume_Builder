@@ -1,3 +1,5 @@
+import { pbkdf2Sync } from 'node:crypto';
+
 import type { ResumeData } from '../../../src/entities/resume/model/types';
 
 const PASSWORD_ITERATIONS = 120_000;
@@ -31,10 +33,6 @@ const toArrayBuffer = (value: Uint8Array): ArrayBuffer => {
   return value.buffer.slice(value.byteOffset, value.byteOffset + value.byteLength) as ArrayBuffer;
 };
 
-const createPasswordKey = async (password: string): Promise<CryptoKey> => {
-  return crypto.subtle.importKey('raw', textEncoder.encode(password), 'PBKDF2', false, ['deriveBits']);
-};
-
 const createEncryptionKey = async (secret: string, userId: string): Promise<CryptoKey> => {
   const digest = await crypto.subtle.digest('SHA-256', textEncoder.encode(`${secret}:${userId}`));
 
@@ -54,16 +52,14 @@ export const createPasswordRecord = async (
 };
 
 export const hashPassword = async (password: string, salt: string): Promise<string> => {
-  const passwordKey = await createPasswordKey(password);
-  const derivedBits = await crypto.subtle.deriveBits(
-    {
-      name: 'PBKDF2',
-      hash: 'SHA-256',
-      salt: toArrayBuffer(decodeBase64(salt)),
-      iterations: PASSWORD_ITERATIONS,
-    },
-    passwordKey,
-    PASSWORD_HASH_BYTES * 8,
+  // Cloudflare's Web Crypto PBKDF2 caps iterations at 100000 in this runtime.
+  // Node crypto remains available via `nodejs_compat`, so use it for password hashing.
+  const derivedBits = pbkdf2Sync(
+    password,
+    decodeBase64(salt),
+    PASSWORD_ITERATIONS,
+    PASSWORD_HASH_BYTES,
+    'sha256',
   );
 
   return encodeBase64(derivedBits);

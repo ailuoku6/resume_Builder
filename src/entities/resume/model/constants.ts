@@ -29,7 +29,7 @@ export const PRESET_SECTIONS: string[] = [
 
 export const DEFAULT_RESUME_DATA: ResumeData = {
   avatar: null,
-  name: '潜伏',
+  name: '张三',
   headline: '',
   summary: '',
   fontPreset: DEFAULT_FONT_PRESET,
