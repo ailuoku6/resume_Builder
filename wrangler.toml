@@ -5,6 +5,6 @@ compatibility_flags = ["nodejs_compat"]
 
 [[d1_databases]]
 binding = "RESUME_DB"
-database_name = "resume-builder"
-database_id = "replace-with-your-d1-database-id"
-preview_database_id = "replace-with-your-preview-d1-database-id"
+database_name = "resume"
+database_id = "8c12d05e-0a5b-406a-8b6e-3f5fe82c45ad"
+preview_database_id = "b3e65330-607e-4297-9df1-149ccd89511a"
