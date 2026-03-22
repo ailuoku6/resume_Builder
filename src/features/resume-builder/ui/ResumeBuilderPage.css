@@ -267,6 +267,9 @@
 
 .resume-preview-hero {
   padding-bottom: 18px;
+}
+
+.resume-preview-hero--with-divider {
   border-bottom: 1px solid #dbe5f2;
 }
 

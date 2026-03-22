@@ -36,6 +36,7 @@ const hasSectionContent = (section: ResumeSection): boolean => {
 
 export const GeneratedResumePreview: React.FC<GeneratedResumePreviewProps> = ({ data }) => {
   const summaryLines = splitLines(data.summary);
+  const hasSummary = summaryLines.length > 0;
   const visibleSections = data.items.filter(hasSectionContent);
   const previewFontClassName =
     FONT_PRESET_CONFIG[data.fontPreset]?.previewClassName ?? FONT_PRESET_CONFIG.oppo.previewClassName;
@@ -48,7 +49,7 @@ export const GeneratedResumePreview: React.FC<GeneratedResumePreviewProps> = ({ 
 
   return (
     <article className={`resume-preview-page ${previewFontClassName}`}>
-      <header className="resume-preview-hero">
+      <header className={`resume-preview-hero${hasSummary ? ' resume-preview-hero--with-divider' : ''}`}>
         <div className="resume-preview-hero-main">
           {data.avatar ? (
             <img className="resume-preview-avatar" src={data.avatar} alt={data.name || 'resume avatar'} />
@@ -74,7 +75,7 @@ export const GeneratedResumePreview: React.FC<GeneratedResumePreviewProps> = ({ 
         </div>
       </header>
 
-      {summaryLines.length > 0 ? (
+      {hasSummary ? (
         <section className="resume-preview-section">
           <h2 className="resume-preview-section-title resume-preview-section-title--plain">
             Profile / 个人简介

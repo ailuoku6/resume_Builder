@@ -64,6 +64,8 @@ const styles = StyleSheet.create({
   },
   hero: {
     paddingBottom: pt(18),
+  },
+  heroWithDivider: {
     borderBottomWidth: pt(1),
     borderBottomColor: PDF_PREVIEW_COLORS.heroDivider,
   },
@@ -271,6 +273,7 @@ const hasSectionContent = (section: ResumeSection): boolean => {
 
 const GeneratedResumeDocument: React.FC<GeneratedResumeDocumentProps> = ({ data }) => {
   const summaryLines = splitLines(data.summary);
+  const hasSummary = summaryLines.length > 0;
   const visibleSections = data.items.filter(hasSectionContent);
   const pageFontFamily =
     FONT_PRESET_CONFIG[data.fontPreset]?.pdfFontFamily ?? FONT_PRESET_CONFIG.oppo.pdfFontFamily;
@@ -284,7 +287,7 @@ const GeneratedResumeDocument: React.FC<GeneratedResumeDocumentProps> = ({ data 
   return (
     <Document>
       <Page size="A4" style={[styles.page, { fontFamily: pageFontFamily }]}>
-        <View style={styles.hero}>
+        <View style={hasSummary ? [styles.hero, styles.heroWithDivider] : styles.hero}>
           <View style={styles.heroMain}>
             {data.avatar ? <Image src={data.avatar} style={styles.avatar} /> : null}
 
@@ -310,7 +313,7 @@ const GeneratedResumeDocument: React.FC<GeneratedResumeDocumentProps> = ({ data 
           </View>
         </View>
 
-        {summaryLines.length > 0 ? (
+        {hasSummary ? (
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, styles.sectionTitlePlain]}>
               {buildCopySafePdfTextChildren('Profile / 个人简介')}
