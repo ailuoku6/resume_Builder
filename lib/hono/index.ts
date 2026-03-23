@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import type { Context } from 'hono';
 
 import type { ResumeData } from '../../src/entities/resume/model/types';
 import { authenticate } from './middleware/authenticate';
@@ -10,7 +11,7 @@ import {
   listResumeDrafts,
   saveResumeDraft,
 } from './service/resumeDraftService';
-import type { Bindings, Variables } from './types';
+import type { AuthIdentity, Bindings, Variables } from './types';
 
 const app = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 
@@ -26,11 +27,24 @@ const isPasswordValid = (value: string): boolean => {
   return value.trim().length >= 8;
 };
 
+const getAuthUser = (
+  ctx: Context<{ Bindings: Bindings; Variables: Variables }>,
+): AuthIdentity | null => {
+  const authUser = ctx.get('authUser');
+
+  if (!authUser?.id || !authUser.email) {
+    return null;
+  }
+
+  return authUser;
+};
+
 app.use('/api/*', errorHandle);
 app.use('/api/auth/session', authenticate);
 app.use('/api/auth/profile', authenticate);
 app.use('/api/auth/change-password', authenticate);
-app.use('/api/resume-drafts*', authenticate);
+app.use('/api/resume-drafts', authenticate);
+app.use('/api/resume-drafts/*', authenticate);
 
 app.get('/api/health', (ctx) => {
   return ctx.json({
@@ -106,7 +120,19 @@ app.post('/api/auth/login', async (ctx) => {
 });
 
 app.get('/api/auth/session', async (ctx) => {
-  const profile = await getProfile(ctx, ctx.get('authUser').id);
+  const authUser = getAuthUser(ctx);
+
+  if (!authUser) {
+    return ctx.json(
+      {
+        result: false,
+        message: 'Unauthorized.',
+      },
+      401,
+    );
+  }
+
+  const profile = await getProfile(ctx, authUser.id);
 
   if (!profile) {
     return ctx.json(
@@ -125,8 +151,19 @@ app.get('/api/auth/session', async (ctx) => {
 });
 
 app.put('/api/auth/profile', async (ctx) => {
+  const authUser = getAuthUser(ctx);
   const body = await ctx.req.json().catch(() => null);
   const displayName = typeof body?.displayName === 'string' ? body.displayName : '';
+
+  if (!authUser) {
+    return ctx.json(
+      {
+        result: false,
+        message: 'Unauthorized.',
+      },
+      401,
+    );
+  }
 
   if (!displayName.trim()) {
     return ctx.json(
@@ -138,7 +175,7 @@ app.put('/api/auth/profile', async (ctx) => {
     );
   }
 
-  const profile = await updateProfile(ctx, ctx.get('authUser').id, displayName);
+  const profile = await updateProfile(ctx, authUser.id, displayName);
 
   if (!profile) {
     return ctx.json(
@@ -157,9 +194,20 @@ app.put('/api/auth/profile', async (ctx) => {
 });
 
 app.post('/api/auth/change-password', async (ctx) => {
+  const authUser = getAuthUser(ctx);
   const body = await ctx.req.json().catch(() => null);
   const currentPassword = typeof body?.currentPassword === 'string' ? body.currentPassword : '';
   const nextPassword = typeof body?.nextPassword === 'string' ? body.nextPassword : '';
+
+  if (!authUser) {
+    return ctx.json(
+      {
+        result: false,
+        message: 'Unauthorized.',
+      },
+      401,
+    );
+  }
 
   if (!currentPassword.trim() || !isPasswordValid(nextPassword)) {
     return ctx.json(
@@ -171,7 +219,7 @@ app.post('/api/auth/change-password', async (ctx) => {
     );
   }
 
-  const result = await changePassword(ctx, ctx.get('authUser').id, currentPassword, nextPassword);
+  const result = await changePassword(ctx, authUser.id, currentPassword, nextPassword);
 
   if (result === 'user-not-found') {
     return ctx.json(
@@ -199,7 +247,18 @@ app.post('/api/auth/change-password', async (ctx) => {
 });
 
 app.get('/api/resume-drafts', async (ctx) => {
-  const authUser = ctx.get('authUser');
+  const authUser = getAuthUser(ctx);
+
+  if (!authUser) {
+    return ctx.json(
+      {
+        result: false,
+        message: 'Unauthorized.',
+      },
+      401,
+    );
+  }
+
   const drafts = await listResumeDrafts(ctx, authUser);
 
   return ctx.json({
@@ -209,8 +268,19 @@ app.get('/api/resume-drafts', async (ctx) => {
 });
 
 app.get('/api/resume-drafts/:draftId', async (ctx) => {
-  const authUser = ctx.get('authUser');
+  const authUser = getAuthUser(ctx);
   const draftId = ctx.req.param('draftId');
+
+  if (!authUser) {
+    return ctx.json(
+      {
+        result: false,
+        message: 'Unauthorized.',
+      },
+      401,
+    );
+  }
+
   const draft = await getResumeDraft(ctx, authUser, draftId);
 
   if (!draft) {
@@ -230,9 +300,19 @@ app.get('/api/resume-drafts/:draftId', async (ctx) => {
 });
 
 app.post('/api/resume-drafts', async (ctx) => {
-  const authUser = ctx.get('authUser');
+  const authUser = getAuthUser(ctx);
   const body = await ctx.req.json().catch(() => null);
   const data = body && 'data' in body ? (body.data as ResumeData) : null;
+
+  if (!authUser) {
+    return ctx.json(
+      {
+        result: false,
+        message: 'Unauthorized.',
+      },
+      401,
+    );
+  }
 
   if (!isResumePayload(data)) {
     return ctx.json(
@@ -263,10 +343,20 @@ app.post('/api/resume-drafts', async (ctx) => {
 });
 
 app.put('/api/resume-drafts/:draftId', async (ctx) => {
-  const authUser = ctx.get('authUser');
+  const authUser = getAuthUser(ctx);
   const draftId = ctx.req.param('draftId');
   const body = await ctx.req.json().catch(() => null);
   const data = body && 'data' in body ? (body.data as ResumeData) : null;
+
+  if (!authUser) {
+    return ctx.json(
+      {
+        result: false,
+        message: 'Unauthorized.',
+      },
+      401,
+    );
+  }
 
   if (!isResumePayload(data)) {
     return ctx.json(
@@ -297,8 +387,19 @@ app.put('/api/resume-drafts/:draftId', async (ctx) => {
 });
 
 app.delete('/api/resume-drafts/:draftId', async (ctx) => {
-  const authUser = ctx.get('authUser');
+  const authUser = getAuthUser(ctx);
   const draftId = ctx.req.param('draftId');
+
+  if (!authUser) {
+    return ctx.json(
+      {
+        result: false,
+        message: 'Unauthorized.',
+      },
+      401,
+    );
+  }
+
   const result = await deleteResumeDraft(ctx, authUser, draftId);
 
   if (result === 'not-found') {
