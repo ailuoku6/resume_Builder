@@ -31,6 +31,12 @@ npm install
 npm run db:migrate:local
 ```
 
+部署到 Cloudflare 生产环境后，还需要再对远端 D1 执行一次迁移：
+
+```bash
+npm run db:migrate:remote
+```
+
 认证和加密还需要再配置两个 Cloudflare Secret：
 
 ```bash

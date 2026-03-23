@@ -93,7 +93,7 @@ const ResumeBuilderPageBase: React.FC = () => {
     const params = new URLSearchParams(window.location.search);
     const draftId = params.get('draft');
 
-    if (!draftId || draftId === resumeStore.cloudDraftId) {
+    if (!draftId) {
       return;
     }
 
