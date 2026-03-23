@@ -7,12 +7,18 @@ import type { CloudDraftSummary } from '@/entities/auth/model/types';
 import { AccountDrawer } from '@/features/auth/ui/AccountDrawer';
 import { AuthDialog } from '@/features/auth/ui/AuthDialog';
 import { CloudDraftDrawer } from '@/features/auth/ui/CloudDraftDrawer';
+import {
+  DEFAULT_RESUME_DATA,
+  LEGACY_STORAGE_KEY,
+  STORAGE_KEY,
+} from '@/entities/resume/model/constants';
 import { resumeStore } from '@/entities/resume/model/resume-store';
 import GeneratedResumeDocument from '@/features/resume-preview/ui/GeneratedResumeDocument';
 import { GeneratedResumePreview } from '@/features/resume-preview/ui/GeneratedResumePreview';
 import { loadAuthSession } from '@/shared/api/auth';
 import {
   deleteCloudResumeDraft,
+  listCloudResumeDrafts,
   loadCloudResumeDraft,
   saveCloudResumeDraft,
 } from '@/shared/api/cloudResume';
@@ -35,12 +41,38 @@ const buildNavigationItems = (): string[] => {
   return labels.slice(0, 5);
 };
 
+const hasStoredResumeSnapshot = (): boolean => {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
+  return Boolean(localStorage.getItem(STORAGE_KEY) ?? localStorage.getItem(LEGACY_STORAGE_KEY));
+};
+
+const isResumeDataPristine = (): boolean => {
+  const data = resumeStore.resumeData;
+
+  return (
+    data.avatar === DEFAULT_RESUME_DATA.avatar &&
+    data.name === DEFAULT_RESUME_DATA.name &&
+    data.headline === DEFAULT_RESUME_DATA.headline &&
+    data.summary === DEFAULT_RESUME_DATA.summary &&
+    data.fontPreset === DEFAULT_RESUME_DATA.fontPreset &&
+    data.sex === DEFAULT_RESUME_DATA.sex &&
+    data.liveAddress === DEFAULT_RESUME_DATA.liveAddress &&
+    data.phoneNum === DEFAULT_RESUME_DATA.phoneNum &&
+    data.email === DEFAULT_RESUME_DATA.email &&
+    data.items.length === 0
+  );
+};
+
 const ResumeBuilderPageBase: React.FC = () => {
   const [isExporting, setIsExporting] = React.useState(false);
   const [isSavingDraft, setIsSavingDraft] = React.useState(false);
   const [saveLabel, setSaveLabel] = React.useState('保存草稿');
   const navigationItems = buildNavigationItems();
   const saveLabelTimerRef = React.useRef<number | null>(null);
+  const latestCloudDraftSyncedUserIdRef = React.useRef<string | null>(null);
 
   React.useEffect(() => {
     if (!authStore.token) {
@@ -84,6 +116,92 @@ const ResumeBuilderPageBase: React.FC = () => {
       }
     };
   }, []);
+
+  React.useEffect(() => {
+    if (!authStore.isAuthenticated || !authStore.user) {
+      latestCloudDraftSyncedUserIdRef.current = null;
+      return;
+    }
+
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    if (latestCloudDraftSyncedUserIdRef.current === authStore.user.id) {
+      return;
+    }
+
+    latestCloudDraftSyncedUserIdRef.current = authStore.user.id;
+
+    const params = new URLSearchParams(window.location.search);
+
+    if (params.get('draft')) {
+      return;
+    }
+
+    if (hasStoredResumeSnapshot() || !isResumeDataPristine()) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const syncLatestDraftFromCloud = async (): Promise<void> => {
+      try {
+        const drafts = await listCloudResumeDrafts();
+
+        if (cancelled) {
+          return;
+        }
+
+        authStore.setDrafts(drafts);
+
+        const latestDraft = drafts[0];
+
+        if (!latestDraft) {
+          return;
+        }
+
+        const draft = await loadCloudResumeDraft(latestDraft.draftId);
+
+        if (cancelled) {
+          return;
+        }
+
+        resumeStore.applyResumeData(draft.data);
+        resumeStore.setCloudDraftId(draft.draftId);
+        setSaveLabel('已加载最新云端草稿');
+
+        const url = new URL(window.location.href);
+        url.searchParams.set('draft', draft.draftId);
+        window.history.replaceState({}, '', url.toString());
+      } catch (error) {
+        if (error instanceof ApiRequestError && error.status === 401) {
+          authStore.clearSession();
+          authStore.openAuthDialog();
+        }
+
+        console.warn('Failed to sync latest cloud resume draft after login.', error);
+      } finally {
+        if (cancelled) {
+          return;
+        }
+
+        if (saveLabelTimerRef.current !== null) {
+          window.clearTimeout(saveLabelTimerRef.current);
+        }
+
+        saveLabelTimerRef.current = window.setTimeout(() => {
+          setSaveLabel('保存草稿');
+        }, 2400);
+      }
+    };
+
+    void syncLatestDraftFromCloud();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authStore.isAuthenticated, authStore.user?.id]);
 
   React.useEffect(() => {
     if (typeof window === 'undefined') {
