@@ -23,6 +23,7 @@ import fontM from '@/font/Font-OPPOSans/OPPOSans-M.ttf';
 import fontR from '@/font/Font-OPPOSans/OPPOSans-R.ttf';
 
 import CustomPdfText, { buildCopySafePdfTextChildren } from './CustomPdfText';
+import { measurePdfTextWidth, wrapPdfTextToString } from './pdf-text-layout';
 
 Font.register({
   family: 'oppoFont',
@@ -33,17 +34,21 @@ Font.register({
   ],
 });
 
-Font.registerHyphenationCallback((word) => {
-  if (word.length === 1) {
-    return [word];
-  }
-
-  return Array.from(word).map((char) => char);
-});
+Font.registerHyphenationCallback((word) => [word]);
 
 const pt = (px: number): number => {
   return Number((px * 0.75).toFixed(2));
 };
+
+const A4_PAGE_WIDTH = 595.28;
+const PAGE_HORIZONTAL_PADDING = pt(40);
+const PAGE_CONTENT_WIDTH = A4_PAGE_WIDTH - PAGE_HORIZONTAL_PADDING * 2;
+const HERO_AVATAR_WIDTH = pt(78);
+const HERO_AVATAR_GAP = pt(20);
+const HERO_CONTENT_WIDTH_WITH_AVATAR = PAGE_CONTENT_WIDTH - HERO_AVATAR_WIDTH - HERO_AVATAR_GAP;
+const CONTACT_ITEM_HORIZONTAL_PADDING = pt(20);
+const ENTRY_TITLE_GAP = pt(14);
+const MIN_ENTRY_TITLE_WIDTH = pt(160);
 
 const PDF_PREVIEW_COLORS = {
   pageText: '#191c1e',
@@ -193,42 +198,77 @@ interface GeneratedResumeDocumentProps {
   data: ResumeData;
 }
 
-const renderLines = (lines: string[], keyPrefix: string): React.ReactNode => {
+const getHeroTextWidth = (hasAvatar: boolean): number => {
+  return hasAvatar ? HERO_CONTENT_WIDTH_WITH_AVATAR : PAGE_CONTENT_WIDTH;
+};
+
+const renderLines = (
+  lines: string[],
+  keyPrefix: string,
+  pageFontFamily: string,
+): React.ReactNode => {
   return lines.map((line, index) => {
     const bullet = isBulletLine(line);
     const content = normalizeBulletLine(line);
     const text = bullet ? `• ${content}` : content;
+    const wrappedText = wrapPdfTextToString(text, {
+      maxWidth: PAGE_CONTENT_WIDTH,
+      fontFamily: pageFontFamily,
+      fontSize: pt(12),
+    });
 
     return (
       <View key={`${keyPrefix}-${index}`} style={styles.paragraph}>
-        <CustomPdfText text={text} style={styles.paragraphText as never} />
+        <CustomPdfText text={wrappedText} style={styles.paragraphText as never} />
       </View>
     );
   });
 };
 
-const renderSection = (section: ResumeSection): React.ReactNode => {
+const renderSection = (section: ResumeSection, pageFontFamily: string): React.ReactNode => {
   const hasEntries = section.entry.length > 0;
   const hasSubEntries = section.subEntry.length > 0;
+  const wrappedSectionTitle = wrapPdfTextToString(section.itemName, {
+    maxWidth: PAGE_CONTENT_WIDTH,
+    fontFamily: pageFontFamily,
+    fontSize: pt(12),
+    fontWeight: 'bold',
+    letterSpacing: 1.1,
+  });
 
   return (
     <View key={section.id} style={styles.section}>
-      <Text style={styles.sectionTitle}>{buildCopySafePdfTextChildren(section.itemName)}</Text>
+      <Text style={styles.sectionTitle}>{buildCopySafePdfTextChildren(wrappedSectionTitle)}</Text>
 
       <View style={styles.sectionBody}>
         {hasEntries
           ? section.entry.map((entryItem) => {
               const detailLines = splitResumeTextLines(entryItem.detail || '');
+              const entryMark = entryItem.mark.trim();
+              const entryMarkWidth = entryMark
+                ? measurePdfTextWidth(entryMark, {
+                    fontFamily: pageFontFamily,
+                    fontSize: pt(11),
+                  })
+                : 0;
+              const entryTitleText = wrapPdfTextToString(entryItem.title || '未命名条目', {
+                maxWidth: entryMark
+                  ? Math.max(PAGE_CONTENT_WIDTH - entryMarkWidth - ENTRY_TITLE_GAP, MIN_ENTRY_TITLE_WIDTH)
+                  : PAGE_CONTENT_WIDTH,
+                fontFamily: pageFontFamily,
+                fontSize: pt(14),
+                fontWeight: 'bold',
+              });
 
               return (
                 <View key={entryItem.id} style={styles.entryBlock}>
                   <View style={styles.entryHeader}>
-                    <Text style={styles.entryTitle}>
-                      {buildCopySafePdfTextChildren(entryItem.title || '未命名条目')}
-                    </Text>
-                    <Text style={styles.entryMark}>{buildCopySafePdfTextChildren(entryItem.mark)}</Text>
+                    <CustomPdfText text={entryTitleText} style={styles.entryTitle as never} />
+                    {entryMark ? (
+                      <Text style={styles.entryMark}>{buildCopySafePdfTextChildren(entryMark)}</Text>
+                    ) : null}
                   </View>
-                  {detailLines.length > 0 ? renderLines(detailLines, entryItem.id) : null}
+                  {detailLines.length > 0 ? renderLines(detailLines, entryItem.id, pageFontFamily) : null}
                 </View>
               );
             })
@@ -237,7 +277,7 @@ const renderSection = (section: ResumeSection): React.ReactNode => {
         {hasSubEntries ? (
           <View style={styles.subEntryBlock}>
             {section.subEntry.map((subEntryItem) => {
-              return renderLines(splitResumeTextLines(subEntryItem.name || ''), subEntryItem.id);
+              return renderLines(splitResumeTextLines(subEntryItem.name || ''), subEntryItem.id, pageFontFamily);
             })}
           </View>
         ) : null}
@@ -256,12 +296,37 @@ const GeneratedResumeDocument: React.FC<GeneratedResumeDocumentProps> = ({ data 
   const visibleSections = getVisibleResumeSections(data.items);
   const pageFontFamily =
     FONT_PRESET_CONFIG[data.fontPreset]?.pdfFontFamily ?? FONT_PRESET_CONFIG.oppo.pdfFontFamily;
+  const heroTextWidth = getHeroTextWidth(Boolean(data.avatar));
+  const wrappedName = wrapPdfTextToString(data.name || '未命名候选人', {
+    maxWidth: heroTextWidth,
+    fontFamily: pageFontFamily,
+    fontSize: pt(36),
+    fontWeight: 'bold',
+  });
+  const wrappedHeadline = data.headline.trim()
+    ? wrapPdfTextToString(data.headline, {
+        maxWidth: heroTextWidth,
+        fontFamily: pageFontFamily,
+        fontSize: pt(12),
+        fontWeight: 'bold',
+        letterSpacing: 1.6,
+      })
+    : '';
   const contactItems = [
     { label: 'Phone', value: data.phoneNum },
     { label: 'Email', value: data.email },
     { label: 'Location', value: data.liveAddress },
     { label: 'Gender', value: data.sex },
-  ].filter((item) => item.value.trim());
+  ]
+    .filter((item) => item.value.trim())
+    .map((item) => ({
+      ...item,
+      wrappedValue: wrapPdfTextToString(item.value, {
+        maxWidth: heroTextWidth - CONTACT_ITEM_HORIZONTAL_PADDING,
+        fontFamily: pageFontFamily,
+        fontSize: pt(12),
+      }),
+    }));
 
   return (
     <Document>
@@ -271,9 +336,9 @@ const GeneratedResumeDocument: React.FC<GeneratedResumeDocumentProps> = ({ data 
             {data.avatar ? <Image src={data.avatar} style={styles.avatar} /> : null}
 
             <View style={styles.heroContent}>
-              <Text style={styles.name}>{buildCopySafePdfTextChildren(data.name || '未命名候选人')}</Text>
+              <CustomPdfText text={wrappedName} style={styles.name as never} />
               {data.headline.trim() ? (
-                <Text style={styles.headline}>{buildCopySafePdfTextChildren(data.headline)}</Text>
+                <CustomPdfText text={wrappedHeadline} style={styles.headline as never} />
               ) : null}
 
               {contactItems.length > 0 ? (
@@ -282,7 +347,7 @@ const GeneratedResumeDocument: React.FC<GeneratedResumeDocumentProps> = ({ data 
                     return (
                       <View key={item.label} style={styles.contactItem}>
                         <Text style={styles.contactLabel}>{buildCopySafePdfTextChildren(item.label)}</Text>
-                        <Text style={styles.contactValue}>{buildCopySafePdfTextChildren(item.value)}</Text>
+                        <CustomPdfText text={item.wrappedValue} style={styles.contactValue as never} />
                       </View>
                     );
                   })}
@@ -299,9 +364,15 @@ const GeneratedResumeDocument: React.FC<GeneratedResumeDocumentProps> = ({ data 
             </Text>
             <View style={styles.summaryWrap}>
               {summaryLines.map((line, index) => {
+                const wrappedLine = wrapPdfTextToString(line, {
+                  maxWidth: PAGE_CONTENT_WIDTH,
+                  fontFamily: pageFontFamily,
+                  fontSize: pt(12),
+                });
+
                 return (
                   <View key={`summary-${index}`} style={styles.paragraph}>
-                    <CustomPdfText text={line} style={styles.summaryLine as never} />
+                    <CustomPdfText text={wrappedLine} style={styles.summaryLine as never} />
                   </View>
                 );
               })}
@@ -309,7 +380,7 @@ const GeneratedResumeDocument: React.FC<GeneratedResumeDocumentProps> = ({ data 
           </View>
         ) : null}
 
-        {visibleSections.map(renderSection)}
+        {visibleSections.map((section) => renderSection(section, pageFontFamily))}
       </Page>
     </Document>
   );

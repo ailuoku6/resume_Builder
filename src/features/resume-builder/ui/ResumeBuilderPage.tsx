@@ -15,6 +15,7 @@ import {
 import { resumeStore } from '@/entities/resume/model/resume-store';
 import GeneratedResumeDocument from '@/features/resume-preview/ui/GeneratedResumeDocument';
 import { GeneratedResumePreview } from '@/features/resume-preview/ui/GeneratedResumePreview';
+import { ensurePdfMeasurementFontsReady } from '@/features/resume-preview/ui/pdf-text-layout';
 import { loadAuthSession } from '@/shared/api/auth';
 import {
   deleteCloudResumeDraft,
@@ -468,6 +469,7 @@ const ResumeBuilderPageBase: React.FC = () => {
     setIsExporting(true);
 
     try {
+      await ensurePdfMeasurementFontsReady();
       const blob = await pdf(<GeneratedResumeDocument data={data} />).toBlob();
       const blobUrl = window.URL.createObjectURL(blob);
       const anchor = document.createElement('a');
