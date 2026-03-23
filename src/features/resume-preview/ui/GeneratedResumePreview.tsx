@@ -1,43 +1,22 @@
 import React from 'react';
 
 import { FONT_PRESET_CONFIG } from '@/entities/resume/model/font-presets';
-import type { ResumeData, ResumeSection } from '@/entities/resume/model/types';
+import {
+  getVisibleResumeSections,
+  isBulletLine,
+  normalizeBulletLine,
+  splitResumeTextLines,
+} from '@/entities/resume/model/visibility';
+import type { ResumeData } from '@/entities/resume/model/types';
 
 interface GeneratedResumePreviewProps {
   data: ResumeData;
 }
 
-const splitLines = (text: string): string[] => {
-  return text
-    .split(/\n+/)
-    .map((line) => line.trim())
-    .filter(Boolean);
-};
-
-const normalizeBulletLine = (line: string): string => {
-  return line.replace(/^[•·\-\*]\s*/, '');
-};
-
-const isBulletLine = (line: string): boolean => {
-  return /^[•·\-\*]\s*/.test(line);
-};
-
-const hasSectionContent = (section: ResumeSection): boolean => {
-  const hasEntryContent = section.entry.some((entryItem) => {
-    return Boolean(entryItem.title.trim() || entryItem.mark.trim() || entryItem.detail.trim());
-  });
-
-  const hasSubEntryContent = section.subEntry.some((subEntryItem) => {
-    return Boolean(subEntryItem.name.trim());
-  });
-
-  return hasEntryContent || hasSubEntryContent;
-};
-
 export const GeneratedResumePreview: React.FC<GeneratedResumePreviewProps> = ({ data }) => {
-  const summaryLines = splitLines(data.summary);
+  const summaryLines = splitResumeTextLines(data.summary);
   const hasSummary = summaryLines.length > 0;
-  const visibleSections = data.items.filter(hasSectionContent);
+  const visibleSections = getVisibleResumeSections(data.items);
   const previewFontClassName =
     FONT_PRESET_CONFIG[data.fontPreset]?.previewClassName ?? FONT_PRESET_CONFIG.oppo.previewClassName;
   const contactItems = [
@@ -99,11 +78,7 @@ export const GeneratedResumePreview: React.FC<GeneratedResumePreviewProps> = ({ 
 
             <div className="resume-preview-section-body">
               {section.entry.map((entryItem) => {
-                const detailLines = splitLines(entryItem.detail);
-
-                if (!entryItem.title.trim() && !entryItem.mark.trim() && detailLines.length === 0) {
-                  return null;
-                }
+                const detailLines = splitResumeTextLines(entryItem.detail);
 
                 return (
                   <div key={entryItem.id} className="resume-preview-entry">
@@ -134,11 +109,7 @@ export const GeneratedResumePreview: React.FC<GeneratedResumePreviewProps> = ({ 
               })}
 
               {section.subEntry.map((subEntryItem) => {
-                const lines = splitLines(subEntryItem.name);
-
-                if (lines.length === 0) {
-                  return null;
-                }
+                const lines = splitResumeTextLines(subEntryItem.name);
 
                 return (
                   <div key={subEntryItem.id} className="resume-preview-entry resume-preview-entry--compact">

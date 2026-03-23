@@ -10,6 +10,12 @@ import {
 } from '@react-pdf/renderer';
 
 import { FONT_PRESET_CONFIG } from '@/entities/resume/model/font-presets';
+import {
+  getVisibleResumeSections,
+  isBulletLine,
+  normalizeBulletLine,
+  splitResumeTextLines,
+} from '@/entities/resume/model/visibility';
 import type { ResumeData, ResumeSection } from '@/entities/resume/model/types';
 
 import fontL from '@/font/Font-OPPOSans/OPPOSans-L.ttf';
@@ -187,21 +193,6 @@ interface GeneratedResumeDocumentProps {
   data: ResumeData;
 }
 
-const splitLines = (text: string): string[] => {
-  return text
-    .split(/\n+/)
-    .map((line) => line.trim())
-    .filter(Boolean);
-};
-
-const normalizeBulletLine = (line: string): string => {
-  return line.replace(/^[•·\-\*]\s*/, '');
-};
-
-const isBulletLine = (line: string): boolean => {
-  return /^[•·\-\*]\s*/.test(line);
-};
-
 const renderLines = (lines: string[], keyPrefix: string): React.ReactNode => {
   return lines.map((line, index) => {
     const bullet = isBulletLine(line);
@@ -227,7 +218,7 @@ const renderSection = (section: ResumeSection): React.ReactNode => {
       <View style={styles.sectionBody}>
         {hasEntries
           ? section.entry.map((entryItem) => {
-              const detailLines = splitLines(entryItem.detail || '');
+              const detailLines = splitResumeTextLines(entryItem.detail || '');
 
               return (
                 <View key={entryItem.id} style={styles.entryBlock}>
@@ -246,7 +237,7 @@ const renderSection = (section: ResumeSection): React.ReactNode => {
         {hasSubEntries ? (
           <View style={styles.subEntryBlock}>
             {section.subEntry.map((subEntryItem) => {
-              return renderLines(splitLines(subEntryItem.name || ''), subEntryItem.id);
+              return renderLines(splitResumeTextLines(subEntryItem.name || ''), subEntryItem.id);
             })}
           </View>
         ) : null}
@@ -259,22 +250,10 @@ const renderSection = (section: ResumeSection): React.ReactNode => {
   );
 };
 
-const hasSectionContent = (section: ResumeSection): boolean => {
-  const hasEntryContent = section.entry.some((entryItem) => {
-    return Boolean(entryItem.title.trim() || entryItem.mark.trim() || entryItem.detail.trim());
-  });
-
-  const hasSubEntryContent = section.subEntry.some((subEntryItem) => {
-    return Boolean(subEntryItem.name.trim());
-  });
-
-  return hasEntryContent || hasSubEntryContent;
-};
-
 const GeneratedResumeDocument: React.FC<GeneratedResumeDocumentProps> = ({ data }) => {
-  const summaryLines = splitLines(data.summary);
+  const summaryLines = splitResumeTextLines(data.summary);
   const hasSummary = summaryLines.length > 0;
-  const visibleSections = data.items.filter(hasSectionContent);
+  const visibleSections = getVisibleResumeSections(data.items);
   const pageFontFamily =
     FONT_PRESET_CONFIG[data.fontPreset]?.pdfFontFamily ?? FONT_PRESET_CONFIG.oppo.pdfFontFamily;
   const contactItems = [

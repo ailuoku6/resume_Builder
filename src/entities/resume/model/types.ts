@@ -7,11 +7,13 @@ export interface ResumeEntry {
   title: string;
   detail: string;
   mark: string;
+  hidden: boolean;
 }
 
 export interface ResumeSubEntry {
   id: string;
   name: string;
+  hidden: boolean;
 }
 
 export interface ResumeSection {
@@ -19,6 +21,7 @@ export interface ResumeSection {
   itemName: string;
   entry: ResumeEntry[];
   subEntry: ResumeSubEntry[];
+  hidden: boolean;
 }
 
 export interface ResumeData {

@@ -52,6 +52,7 @@ const normalizeEntry = (value: unknown): ResumeEntry => {
     title: toSafeString(payload.title),
     detail: toSafeString(payload.detail),
     mark: toSafeString(payload.mark),
+    hidden: typeof payload.hidden === 'boolean' ? payload.hidden : false,
   };
 };
 
@@ -61,6 +62,7 @@ const normalizeSubEntry = (value: unknown): ResumeSubEntry => {
   return {
     id: toSafeString(payload.id, createId()),
     name: toSafeString(payload.name),
+    hidden: typeof payload.hidden === 'boolean' ? payload.hidden : false,
   };
 };
 
@@ -74,6 +76,7 @@ const normalizeSection = (value: unknown): ResumeSection => {
     subEntry: Array.isArray(payload.subEntry)
       ? payload.subEntry.map(normalizeSubEntry)
       : [],
+    hidden: typeof payload.hidden === 'boolean' ? payload.hidden : false,
   };
 };
 
@@ -83,6 +86,7 @@ const createEntry = (): ResumeEntry => {
     title: '大条目标题',
     detail: '大条目详情',
     mark: '2018-01 至 2020-3',
+    hidden: false,
   };
 };
 
@@ -90,6 +94,7 @@ const createSubEntry = (): ResumeSubEntry => {
   return {
     id: createId(),
     name: '小条目',
+    hidden: false,
   };
 };
 
@@ -99,6 +104,7 @@ const createSection = (itemName = CUSTOM_SECTION_PLACEHOLDER): ResumeSection => 
     itemName,
     entry: [],
     subEntry: [],
+    hidden: false,
   };
 };
 
@@ -217,6 +223,13 @@ export class ResumeStore implements ResumeState {
     }));
   }
 
+  toggleSectionHidden(sectionId: string): void {
+    this.updateSection(sectionId, (section) => ({
+      ...section,
+      hidden: !section.hidden,
+    }));
+  }
+
   reorderSections(oldIndex: number, newIndex: number): void {
     this.items = reorder(this.items, oldIndex, newIndex);
   }
@@ -239,6 +252,22 @@ export class ResumeStore implements ResumeState {
         return {
           ...item,
           ...patch,
+        };
+      }),
+    }));
+  }
+
+  toggleEntryHidden(sectionId: string, entryId: string): void {
+    this.updateSection(sectionId, (section) => ({
+      ...section,
+      entry: section.entry.map((item) => {
+        if (item.id !== entryId) {
+          return item;
+        }
+
+        return {
+          ...item,
+          hidden: !item.hidden,
         };
       }),
     }));
@@ -276,6 +305,22 @@ export class ResumeStore implements ResumeState {
         return {
           ...item,
           name,
+        };
+      }),
+    }));
+  }
+
+  toggleSubEntryHidden(sectionId: string, subEntryId: string): void {
+    this.updateSection(sectionId, (section) => ({
+      ...section,
+      subEntry: section.subEntry.map((item) => {
+        if (item.id !== subEntryId) {
+          return item;
+        }
+
+        return {
+          ...item,
+          hidden: !item.hidden,
         };
       }),
     }));

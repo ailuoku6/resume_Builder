@@ -31,7 +31,7 @@ const SectionEditorBase: React.FC<SectionEditorProps> = ({ store, section }) => 
   const hasContent = section.entry.length > 0 || section.subEntry.length > 0;
 
   return (
-    <section className="section-editor">
+    <section className={`section-editor${section.hidden ? ' section-editor--hidden' : ''}`}>
       <div className="section-editor__header">
         <div className="section-editor__title-row">
           <span className="section-editor__drag">⋮⋮</span>
@@ -45,17 +45,33 @@ const SectionEditorBase: React.FC<SectionEditorProps> = ({ store, section }) => 
           />
         </div>
 
-        <button
-          type="button"
-          className="section-editor__delete"
-          aria-label="删除模块"
-          onClick={() => {
-            store.removeSection(section.id);
-          }}
-        >
-          <DeleteIcon fontSize="small" />
-        </button>
+        <div className="section-editor__header-actions">
+          <button
+            type="button"
+            className={`visibility-toggle${section.hidden ? ' visibility-toggle--hidden' : ''}`}
+            onClick={() => {
+              store.toggleSectionHidden(section.id);
+            }}
+          >
+            {section.hidden ? '显示分区' : '隐藏分区'}
+          </button>
+
+          <button
+            type="button"
+            className="section-editor__delete"
+            aria-label="删除模块"
+            onClick={() => {
+              store.removeSection(section.id);
+            }}
+          >
+            <DeleteIcon fontSize="small" />
+          </button>
+        </div>
       </div>
+
+      {section.hidden ? (
+        <div className="section-editor__status">这个分区已隐藏，预览与导出都不会展示它的内容。</div>
+      ) : null}
 
       {!hasContent ? (
         <div className="section-editor__empty">
@@ -82,24 +98,45 @@ const SectionEditorBase: React.FC<SectionEditorProps> = ({ store, section }) => 
       >
         {section.entry.map((entryItem) => {
           return (
-            <div key={entryItem.id} className="entry-editor-card">
+            <div
+              key={entryItem.id}
+              className={`entry-editor-card${entryItem.hidden ? ' entry-editor-card--hidden' : ''}`}
+            >
               <div className="entry-editor-card__top">
                 <div className="entry-editor-card__top-meta">
                   <span className="entry-editor-card__drag" aria-hidden="true">
                     ⋮⋮
                   </span>
                   <span className="entry-editor-card__badge">经历条目</span>
+                  {entryItem.hidden ? (
+                    <span className="entry-editor-card__visibility-state">已隐藏</span>
+                  ) : null}
                 </div>
-                <button
-                  type="button"
-                  className="entry-editor-card__remove"
-                  onClick={() => {
-                    store.removeEntry(section.id, entryItem.id);
-                  }}
-                >
-                  删除
-                </button>
+                <div className="entry-editor-card__actions">
+                  <button
+                    type="button"
+                    className={`visibility-toggle${entryItem.hidden ? ' visibility-toggle--hidden' : ''}`}
+                    onClick={() => {
+                      store.toggleEntryHidden(section.id, entryItem.id);
+                    }}
+                  >
+                    {entryItem.hidden ? '显示条目' : '隐藏条目'}
+                  </button>
+                  <button
+                    type="button"
+                    className="entry-editor-card__remove"
+                    onClick={() => {
+                      store.removeEntry(section.id, entryItem.id);
+                    }}
+                  >
+                    删除
+                  </button>
+                </div>
               </div>
+
+              {entryItem.hidden ? (
+                <div className="entry-editor-card__status">这个经历条目已隐藏，预览与导出不会展示。</div>
+              ) : null}
 
               <div className="editor-form-grid editor-form-grid--two">
                 <label className="editor-field">
@@ -169,7 +206,12 @@ const SectionEditorBase: React.FC<SectionEditorProps> = ({ store, section }) => 
       >
         {section.subEntry.map((subEntryItem) => {
           return (
-            <div key={subEntryItem.id} className="entry-editor-card entry-editor-card--compact">
+            <div
+              key={subEntryItem.id}
+              className={`entry-editor-card entry-editor-card--compact${
+                subEntryItem.hidden ? ' entry-editor-card--hidden' : ''
+              }`}
+            >
               <div className="entry-editor-card__top">
                 <div className="entry-editor-card__top-meta">
                   <span className="entry-editor-card__drag" aria-hidden="true">
@@ -178,17 +220,35 @@ const SectionEditorBase: React.FC<SectionEditorProps> = ({ store, section }) => 
                   <span className="entry-editor-card__badge entry-editor-card__badge--secondary">
                     列表项
                   </span>
+                  {subEntryItem.hidden ? (
+                    <span className="entry-editor-card__visibility-state">已隐藏</span>
+                  ) : null}
                 </div>
-                <button
-                  type="button"
-                  className="entry-editor-card__remove"
-                  onClick={() => {
-                    store.removeSubEntry(section.id, subEntryItem.id);
-                  }}
-                >
-                  删除
-                </button>
+                <div className="entry-editor-card__actions">
+                  <button
+                    type="button"
+                    className={`visibility-toggle${subEntryItem.hidden ? ' visibility-toggle--hidden' : ''}`}
+                    onClick={() => {
+                      store.toggleSubEntryHidden(section.id, subEntryItem.id);
+                    }}
+                  >
+                    {subEntryItem.hidden ? '显示列表项' : '隐藏列表项'}
+                  </button>
+                  <button
+                    type="button"
+                    className="entry-editor-card__remove"
+                    onClick={() => {
+                      store.removeSubEntry(section.id, subEntryItem.id);
+                    }}
+                  >
+                    删除
+                  </button>
+                </div>
               </div>
+
+              {subEntryItem.hidden ? (
+                <div className="entry-editor-card__status">这个列表项已隐藏，预览与导出不会展示。</div>
+              ) : null}
 
               <label className="editor-field editor-field--full">
                 <span className="editor-field__label">列表内容</span>

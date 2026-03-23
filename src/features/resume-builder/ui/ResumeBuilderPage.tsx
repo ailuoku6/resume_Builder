@@ -71,8 +71,11 @@ const ResumeBuilderPageBase: React.FC = () => {
   const [isSavingDraft, setIsSavingDraft] = React.useState(false);
   const [saveLabel, setSaveLabel] = React.useState('保存草稿');
   const navigationItems = buildNavigationItems();
+  const autoSaveTimerRef = React.useRef<number | null>(null);
   const saveLabelTimerRef = React.useRef<number | null>(null);
   const latestCloudDraftSyncedUserIdRef = React.useRef<string | null>(null);
+  const lastPersistedSnapshotRef = React.useRef(JSON.stringify(resumeStore.resumeData));
+  const hasInitializedAutoSaveRef = React.useRef(false);
 
   React.useEffect(() => {
     if (!authStore.token) {
@@ -111,6 +114,10 @@ const ResumeBuilderPageBase: React.FC = () => {
 
   React.useEffect(() => {
     return () => {
+      if (autoSaveTimerRef.current !== null) {
+        window.clearTimeout(autoSaveTimerRef.current);
+      }
+
       if (saveLabelTimerRef.current !== null) {
         window.clearTimeout(saveLabelTimerRef.current);
       }
@@ -169,6 +176,7 @@ const ResumeBuilderPageBase: React.FC = () => {
 
         resumeStore.applyResumeData(draft.data);
         resumeStore.setCloudDraftId(draft.draftId);
+        markCurrentResumeAsPersisted();
         setSaveLabel('已加载最新云端草稿');
 
         const url = new URL(window.location.href);
@@ -232,6 +240,7 @@ const ResumeBuilderPageBase: React.FC = () => {
 
         resumeStore.applyResumeData(draft.data);
         resumeStore.setCloudDraftId(draft.draftId);
+        markCurrentResumeAsPersisted();
         setSaveLabel('已加载云端草稿');
       } catch (error) {
         if (error instanceof ApiRequestError && error.status === 401) {
@@ -274,6 +283,10 @@ const ResumeBuilderPageBase: React.FC = () => {
     }, timeout);
   };
 
+  const markCurrentResumeAsPersisted = (): void => {
+    lastPersistedSnapshotRef.current = JSON.stringify(resumeStore.resumeData);
+  };
+
   const syncDraftUrl = (draftId: string): void => {
     if (typeof window === 'undefined') {
       return;
@@ -297,9 +310,86 @@ const ResumeBuilderPageBase: React.FC = () => {
   const handleCreateBlankResume = (): void => {
     resumeStore.resetToDefault();
     resumeStore.setCloudDraftId(null);
+    markCurrentResumeAsPersisted();
     clearDraftUrl();
     updateSaveLabel('已新建空白简历');
     authStore.closeDraftsDrawer();
+  };
+
+  const persistDraft = async ({
+    trigger,
+    createNewDraft,
+    showAuthDialogOnLocalOnly,
+  }: {
+    trigger: 'manual' | 'auto';
+    createNewDraft: boolean;
+    showAuthDialogOnLocalOnly: boolean;
+  }): Promise<boolean> => {
+    if (autoSaveTimerRef.current !== null) {
+      window.clearTimeout(autoSaveTimerRef.current);
+      autoSaveTimerRef.current = null;
+    }
+
+    if (isSavingDraft) {
+      return false;
+    }
+
+    const snapshot = JSON.stringify(resumeStore.resumeData);
+
+    resumeStore.saveToStorage();
+    lastPersistedSnapshotRef.current = snapshot;
+
+    if (!authStore.isAuthenticated) {
+      updateSaveLabel(trigger === 'auto' ? '已自动保存到本地' : '已保存到本地');
+
+      if (showAuthDialogOnLocalOnly) {
+        authStore.openAuthDialog();
+      }
+
+      return true;
+    }
+
+    setIsSavingDraft(true);
+    setSaveLabel(
+      createNewDraft ? '另存中...' : trigger === 'auto' ? '自动保存中...' : '保存中...',
+    );
+
+    try {
+      const draft = await saveCloudResumeDraft(
+        resumeStore.resumeData,
+        createNewDraft ? null : resumeStore.cloudDraftId,
+      );
+
+      resumeStore.setCloudDraftId(draft.draftId);
+      syncDraftUrl(draft.draftId);
+      updateSaveLabel(
+        createNewDraft
+          ? '已另存为新草稿'
+          : trigger === 'auto'
+            ? '已自动保存到云端'
+            : '已保存到云端',
+      );
+      return true;
+    } catch (error) {
+      if (error instanceof ApiRequestError && error.status === 401) {
+        authStore.clearSession();
+
+        if (showAuthDialogOnLocalOnly) {
+          authStore.openAuthDialog();
+        }
+      }
+
+      if (createNewDraft) {
+        window.alert(error instanceof Error ? error.message : '另存为新草稿失败。');
+      } else {
+        console.warn('Failed to save resume draft to Cloudflare backend.', error);
+      }
+
+      updateSaveLabel(trigger === 'auto' ? '已自动保存到本地' : '已保存到本地');
+      return false;
+    } finally {
+      setIsSavingDraft(false);
+    }
   };
 
   const handleLoadDraft = async (draftId: string): Promise<void> => {
@@ -308,6 +398,7 @@ const ResumeBuilderPageBase: React.FC = () => {
 
       resumeStore.applyResumeData(draft.data);
       resumeStore.setCloudDraftId(draft.draftId);
+      markCurrentResumeAsPersisted();
       syncDraftUrl(draft.draftId);
       updateSaveLabel('已切换云端草稿');
       authStore.closeDraftsDrawer();
@@ -327,30 +418,14 @@ const ResumeBuilderPageBase: React.FC = () => {
       return;
     }
 
-    if (isSavingDraft) {
-      return;
-    }
+    const saved = await persistDraft({
+      trigger: 'manual',
+      createNewDraft: true,
+      showAuthDialogOnLocalOnly: true,
+    });
 
-    resumeStore.saveToStorage();
-    setIsSavingDraft(true);
-    setSaveLabel('另存中...');
-
-    try {
-      const draft = await saveCloudResumeDraft(resumeStore.resumeData, null);
-      resumeStore.setCloudDraftId(draft.draftId);
-      syncDraftUrl(draft.draftId);
-      updateSaveLabel('已另存为新草稿');
+    if (saved) {
       authStore.closeDraftsDrawer();
-    } catch (error) {
-      if (error instanceof ApiRequestError && error.status === 401) {
-        authStore.clearSession();
-        authStore.openAuthDialog();
-      }
-
-      window.alert(error instanceof Error ? error.message : '另存为新草稿失败。');
-      updateSaveLabel('已保存到本地');
-    } finally {
-      setIsSavingDraft(false);
     }
   };
 
@@ -414,38 +489,11 @@ const ResumeBuilderPageBase: React.FC = () => {
   };
 
   const handleSave = async (): Promise<void> => {
-    if (isSavingDraft) {
-      return;
-    }
-
-    resumeStore.saveToStorage();
-
-    if (!authStore.isAuthenticated) {
-      updateSaveLabel('已保存到本地');
-      authStore.openAuthDialog();
-      return;
-    }
-
-    setIsSavingDraft(true);
-    setSaveLabel('保存中...');
-
-    try {
-      const draft = await saveCloudResumeDraft(resumeStore.resumeData, resumeStore.cloudDraftId);
-
-      resumeStore.setCloudDraftId(draft.draftId);
-      syncDraftUrl(draft.draftId);
-      updateSaveLabel('已保存到云端');
-    } catch (error) {
-      if (error instanceof ApiRequestError && error.status === 401) {
-        authStore.clearSession();
-        authStore.openAuthDialog();
-      }
-
-      console.warn('Failed to save resume draft to Cloudflare backend.', error);
-      updateSaveLabel('已保存到本地');
-    } finally {
-      setIsSavingDraft(false);
-    }
+    await persistDraft({
+      trigger: 'manual',
+      createNewDraft: false,
+      showAuthDialogOnLocalOnly: true,
+    });
   };
 
   const handleLogout = (): void => {
@@ -454,6 +502,43 @@ const ResumeBuilderPageBase: React.FC = () => {
     clearDraftUrl();
     updateSaveLabel('已退出登录');
   };
+
+  const resumeSnapshot = JSON.stringify(resumeStore.resumeData);
+
+  React.useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    if (!hasInitializedAutoSaveRef.current) {
+      hasInitializedAutoSaveRef.current = true;
+      lastPersistedSnapshotRef.current = resumeSnapshot;
+      return;
+    }
+
+    if (resumeSnapshot === lastPersistedSnapshotRef.current || isSavingDraft) {
+      return;
+    }
+
+    if (autoSaveTimerRef.current !== null) {
+      window.clearTimeout(autoSaveTimerRef.current);
+    }
+
+    autoSaveTimerRef.current = window.setTimeout(() => {
+      void persistDraft({
+        trigger: 'auto',
+        createNewDraft: false,
+        showAuthDialogOnLocalOnly: false,
+      });
+    }, 2000);
+
+    return () => {
+      if (autoSaveTimerRef.current !== null) {
+        window.clearTimeout(autoSaveTimerRef.current);
+        autoSaveTimerRef.current = null;
+      }
+    };
+  }, [resumeSnapshot, isSavingDraft, authStore.isAuthenticated]);
 
   return (
     <div className="builder-shell">
