@@ -16,9 +16,58 @@ type ImeTextareaProps = Omit<
   onValueChange: (value: string) => void;
 };
 
+type EditableElement = HTMLInputElement | HTMLTextAreaElement;
+
+type EditableSelection = {
+  start: number;
+  end: number;
+  direction?: 'forward' | 'backward' | 'none';
+};
+
+const readSelection = (element: EditableElement): EditableSelection | null => {
+  if (typeof element.selectionStart !== 'number' || typeof element.selectionEnd !== 'number') {
+    return null;
+  }
+
+  return {
+    start: element.selectionStart,
+    end: element.selectionEnd,
+    direction: element.selectionDirection ?? undefined,
+  };
+};
+
 const useImeValue = (value: string, onValueChange: (value: string) => void) => {
   const [draftValue, setDraftValue] = React.useState(value);
   const [isComposing, setIsComposing] = React.useState(false);
+  const elementRef = React.useRef<EditableElement | null>(null);
+  const pendingSelectionRef = React.useRef<EditableSelection | null>(null);
+
+  const rememberSelection = React.useCallback((element: EditableElement) => {
+    pendingSelectionRef.current = readSelection(element);
+  }, []);
+
+  React.useLayoutEffect(() => {
+    // React rewrites the controlled value after IME commits, so we restore the caret explicitly.
+    if (isComposing || typeof document === 'undefined') {
+      return;
+    }
+
+    const element = elementRef.current;
+    const selection = pendingSelectionRef.current;
+
+    if (!element || !selection || document.activeElement !== element) {
+      return;
+    }
+
+    try {
+      element.setSelectionRange(selection.start, selection.end, selection.direction);
+    } catch (error) {
+      pendingSelectionRef.current = null;
+      return;
+    }
+
+    pendingSelectionRef.current = null;
+  }, [draftValue, isComposing, value]);
 
   React.useEffect(() => {
     if (isComposing) {
@@ -29,20 +78,26 @@ const useImeValue = (value: string, onValueChange: (value: string) => void) => {
   }, [isComposing, value]);
 
   const handleCompositionStart = React.useCallback(() => {
+    pendingSelectionRef.current = null;
     setIsComposing(true);
   }, []);
 
   const handleCompositionEnd = React.useCallback(
-    (nextValue: string) => {
+    (nextValue: string, element: EditableElement) => {
+      rememberSelection(element);
       setIsComposing(false);
       setDraftValue(nextValue);
       onValueChange(nextValue);
     },
-    [onValueChange],
+    [onValueChange, rememberSelection],
   );
 
   const handleChange = React.useCallback(
-    (nextValue: string, composing: boolean) => {
+    (nextValue: string, composing: boolean, element: EditableElement) => {
+      if (!composing && !isComposing) {
+        rememberSelection(element);
+      }
+
       setDraftValue(nextValue);
 
       if (composing || isComposing) {
@@ -51,10 +106,12 @@ const useImeValue = (value: string, onValueChange: (value: string) => void) => {
 
       onValueChange(nextValue);
     },
-    [isComposing, onValueChange],
+    [isComposing, onValueChange, rememberSelection],
   );
 
   const handleBlur = React.useCallback(() => {
+    pendingSelectionRef.current = null;
+
     if (draftValue !== value) {
       onValueChange(draftValue);
     }
@@ -62,6 +119,7 @@ const useImeValue = (value: string, onValueChange: (value: string) => void) => {
 
   return {
     draftValue,
+    elementRef,
     handleBlur,
     handleChange,
     handleCompositionEnd,
@@ -74,12 +132,19 @@ const isNativeComposing = (event: { isComposing?: boolean }): boolean => {
 };
 
 export const ImeInput: React.FC<ImeInputProps> = ({ value, onValueChange, onBlur, ...props }) => {
-  const { draftValue, handleBlur, handleChange, handleCompositionEnd, handleCompositionStart } =
-    useImeValue(value, onValueChange);
+  const {
+    draftValue,
+    elementRef,
+    handleBlur,
+    handleChange,
+    handleCompositionEnd,
+    handleCompositionStart,
+  } = useImeValue(value, onValueChange);
 
   return (
     <input
       {...props}
+      ref={elementRef as React.RefObject<HTMLInputElement>}
       value={draftValue}
       onBlur={(event) => {
         handleBlur();
@@ -89,13 +154,14 @@ export const ImeInput: React.FC<ImeInputProps> = ({ value, onValueChange, onBlur
         handleChange(
           event.target.value,
           isNativeComposing(event.nativeEvent as { isComposing?: boolean }),
+          event.currentTarget,
         );
       }}
       onCompositionStart={() => {
         handleCompositionStart();
       }}
       onCompositionEnd={(event) => {
-        handleCompositionEnd(event.currentTarget.value);
+        handleCompositionEnd(event.currentTarget.value, event.currentTarget);
       }}
     />
   );
@@ -107,12 +173,19 @@ export const ImeTextarea: React.FC<ImeTextareaProps> = ({
   onBlur,
   ...props
 }) => {
-  const { draftValue, handleBlur, handleChange, handleCompositionEnd, handleCompositionStart } =
-    useImeValue(value, onValueChange);
+  const {
+    draftValue,
+    elementRef,
+    handleBlur,
+    handleChange,
+    handleCompositionEnd,
+    handleCompositionStart,
+  } = useImeValue(value, onValueChange);
 
   return (
     <textarea
       {...props}
+      ref={elementRef as React.RefObject<HTMLTextAreaElement>}
       value={draftValue}
       onBlur={(event) => {
         handleBlur();
@@ -122,13 +195,14 @@ export const ImeTextarea: React.FC<ImeTextareaProps> = ({
         handleChange(
           event.target.value,
           isNativeComposing(event.nativeEvent as { isComposing?: boolean }),
+          event.currentTarget,
         );
       }}
       onCompositionStart={() => {
         handleCompositionStart();
       }}
       onCompositionEnd={(event) => {
-        handleCompositionEnd(event.currentTarget.value);
+        handleCompositionEnd(event.currentTarget.value, event.currentTarget);
       }}
     />
   );
