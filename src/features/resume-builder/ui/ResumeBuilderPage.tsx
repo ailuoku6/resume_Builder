@@ -620,16 +620,6 @@ const ResumeBuilderPageBase: React.FC = () => {
 
           <button
             type="button"
-            className="topbar-button topbar-button--ghost"
-            onClick={() => {
-              resumeStore.toggleDrawer();
-            }}
-          >
-            模板分区
-          </button>
-
-          <button
-            type="button"
             className="topbar-button topbar-button--subtle"
             onClick={() => {
               void handleSave();

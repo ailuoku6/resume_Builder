@@ -195,6 +195,10 @@ export class ResumeStore implements ResumeState {
     this.open = !this.open;
   }
 
+  openDrawer(): void {
+    this.open = true;
+  }
+
   closeDrawer(): void {
     this.open = false;
   }

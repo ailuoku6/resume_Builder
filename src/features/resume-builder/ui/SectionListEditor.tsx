@@ -65,7 +65,7 @@ const SectionListEditorBase: React.FC<SectionListEditorProps> = ({ store }) => {
           type="button"
           className="section-list-button section-list-button--secondary"
           onClick={() => {
-            store.toggleDrawer();
+            store.openDrawer();
           }}
         >
           从模板添加
