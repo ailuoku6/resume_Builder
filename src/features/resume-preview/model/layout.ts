@@ -39,6 +39,7 @@ export const RESUME_LAYOUT_PX = {
   contactValueFontSize: 12,
   contactValueMarginTop: 2,
   sectionMarginTop: 14,
+  firstSectionMarginTopWithoutSummary: 2,
   sectionTitlePaddingBottom: 8,
   sectionTitleFontSize: 12,
   sectionTitleLetterSpacing: 1.2,
@@ -164,6 +165,18 @@ export const getSectionBodyMarginTopPx = (firstBlock: ResumeSectionBlockModel | 
 
 export const getSectionBodyMarginTopPt = (firstBlock: ResumeSectionBlockModel | null): number => {
   return pxToPt(getSectionBodyMarginTopPx(firstBlock));
+};
+
+export const getResumeSectionMarginTopPx = (sectionIndex: number, hasSummary: boolean): number => {
+  if (!hasSummary && sectionIndex === 0) {
+    return RESUME_LAYOUT_PX.firstSectionMarginTopWithoutSummary;
+  }
+
+  return RESUME_LAYOUT_PX.sectionMarginTop;
+};
+
+export const getResumeSectionMarginTopPt = (sectionIndex: number, hasSummary: boolean): number => {
+  return pxToPt(getResumeSectionMarginTopPx(sectionIndex, hasSummary));
 };
 
 export const createResumePreviewStyles = (previewFontFamily: string): ResumePreviewStyles => {

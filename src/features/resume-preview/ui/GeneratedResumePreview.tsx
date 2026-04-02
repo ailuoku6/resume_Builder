@@ -7,16 +7,10 @@ import {
 } from '@/entities/resume/model/visibility';
 import type { ResumeData } from '@/entities/resume/model/types';
 import {
-  CONTACT_ITEM_HORIZONTAL_PADDING_PT,
-  ENTRY_TITLE_GAP_PT,
-  MIN_ENTRY_TITLE_WIDTH_PT,
-  PAGE_CONTENT_WIDTH_PT,
-  RESUME_LAYOUT_PX,
   createResumePreviewStyles,
-  getHeroTextWidthPt,
   getResumeBlockWrapperMarginTopPx,
+  getResumeSectionMarginTopPx,
   getSectionBodyMarginTopPx,
-  pxToPt,
 } from '@/features/resume-preview/model/layout';
 import {
   buildResumeContactItems,
@@ -24,69 +18,18 @@ import {
   buildResumeSummaryLines,
 } from '@/features/resume-preview/model/render-model';
 
-import { ensurePdfMeasurementFontsReady, measurePdfTextWidth, wrapPdfTextToString } from './pdf-text-layout';
-
 interface GeneratedResumePreviewProps {
   data: ResumeData;
 }
 
 export const GeneratedResumePreview: React.FC<GeneratedResumePreviewProps> = ({ data }) => {
-  const [, forceFontRefresh] = React.useState(0);
-
-  React.useEffect(() => {
-    let cancelled = false;
-
-    const prepareFonts = async (): Promise<void> => {
-      try {
-        await ensurePdfMeasurementFontsReady();
-      } catch (error) {
-        console.warn('Failed to prepare preview measurement fonts.', error);
-      } finally {
-        if (!cancelled) {
-          forceFontRefresh((value) => value + 1);
-        }
-      }
-    };
-
-    void prepareFonts();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [data.fontPreset]);
-
   const summaryLines = buildResumeSummaryLines(data.summary);
   const hasSummary = summaryLines.length > 0;
+  let visibleSectionIndex = 0;
   const previewFontFamily =
     FONT_PRESET_CONFIG[data.fontPreset]?.previewFontFamily ?? FONT_PRESET_CONFIG.oppo.previewFontFamily;
-  const pdfFontFamily =
-    FONT_PRESET_CONFIG[data.fontPreset]?.pdfFontFamily ?? FONT_PRESET_CONFIG.oppo.pdfFontFamily;
   const previewStyles = createResumePreviewStyles(previewFontFamily);
-  const heroTextWidth = getHeroTextWidthPt(Boolean(data.avatar));
-  const wrappedName = wrapPdfTextToString(data.name || '未命名候选人', {
-    maxWidth: heroTextWidth,
-    fontFamily: pdfFontFamily,
-    fontSize: pxToPt(RESUME_LAYOUT_PX.nameFontSize),
-    fontWeight: 'bold',
-    letterSpacing: pxToPt(RESUME_LAYOUT_PX.nameLetterSpacing),
-  });
-  const wrappedHeadline = data.headline.trim()
-    ? wrapPdfTextToString(data.headline, {
-        maxWidth: heroTextWidth,
-        fontFamily: pdfFontFamily,
-        fontSize: pxToPt(RESUME_LAYOUT_PX.headlineFontSize),
-        fontWeight: 'bold',
-        letterSpacing: pxToPt(RESUME_LAYOUT_PX.headlineLetterSpacing),
-      })
-    : '';
-  const contactItems = buildResumeContactItems(data).map((item) => ({
-    ...item,
-    wrappedValue: wrapPdfTextToString(item.value, {
-      maxWidth: heroTextWidth - CONTACT_ITEM_HORIZONTAL_PADDING_PT,
-      fontFamily: pdfFontFamily,
-      fontSize: pxToPt(RESUME_LAYOUT_PX.contactValueFontSize),
-    }),
-  }));
+  const contactItems = buildResumeContactItems(data);
   const rootHeroStyle = hasSummary
     ? { ...previewStyles.hero, ...previewStyles.heroWithDivider }
     : previewStyles.hero;
@@ -101,8 +44,8 @@ export const GeneratedResumePreview: React.FC<GeneratedResumePreviewProps> = ({ 
           {data.avatar ? <img style={previewStyles.avatar} src={data.avatar} alt={data.name || 'resume avatar'} /> : null}
 
           <div style={previewStyles.heroContent}>
-            <h1 style={previewStyles.name}>{wrappedName}</h1>
-            {data.headline.trim() ? <p style={previewStyles.headline}>{wrappedHeadline}</p> : null}
+            <h1 style={previewStyles.name}>{data.name || '未命名候选人'}</h1>
+            {data.headline.trim() ? <p style={previewStyles.headline}>{data.headline}</p> : null}
 
             {contactItems.length > 0 ? (
               <div style={previewStyles.contactRow}>
@@ -110,7 +53,7 @@ export const GeneratedResumePreview: React.FC<GeneratedResumePreviewProps> = ({ 
                   return (
                     <div key={item.label} style={previewStyles.contactItem}>
                       <span style={previewStyles.contactLabel}>{item.label}</span>
-                      <span style={previewStyles.contactValue}>{item.wrappedValue}</span>
+                      <span style={previewStyles.contactValue}>{item.value}</span>
                     </div>
                   );
                 })}
@@ -122,25 +65,11 @@ export const GeneratedResumePreview: React.FC<GeneratedResumePreviewProps> = ({ 
 
       {hasSummary ? (
         <section style={previewStyles.section}>
-          <h2 style={{ ...previewStyles.sectionTitle, ...previewStyles.sectionTitlePlain }}>
-            {wrapPdfTextToString('Profile / 个人简介', {
-              maxWidth: PAGE_CONTENT_WIDTH_PT,
-              fontFamily: pdfFontFamily,
-              fontSize: pxToPt(RESUME_LAYOUT_PX.sectionTitleFontSize),
-              fontWeight: 'bold',
-              letterSpacing: pxToPt(RESUME_LAYOUT_PX.sectionTitleLetterSpacing),
-            })}
-          </h2>
+          <h2 style={{ ...previewStyles.sectionTitle, ...previewStyles.sectionTitlePlain }}>Profile / 个人简介</h2>
           <div style={previewStyles.sectionBody}>
             {summaryLines.map((line, index) => {
               return (
-                <p key={line.id} style={getParagraphStyle(index)}>
-                  {wrapPdfTextToString(line.text, {
-                    maxWidth: PAGE_CONTENT_WIDTH_PT,
-                    fontFamily: pdfFontFamily,
-                    fontSize: pxToPt(RESUME_LAYOUT_PX.paragraphFontSize),
-                  })}
-                </p>
+                <p key={line.id} style={getParagraphStyle(index)}>{line.text}</p>
               );
             })}
           </div>
@@ -175,21 +104,19 @@ export const GeneratedResumePreview: React.FC<GeneratedResumePreviewProps> = ({ 
           );
         }
 
-        const wrappedSectionTitle = wrapPdfTextToString(section.itemName, {
-          maxWidth: PAGE_CONTENT_WIDTH_PT,
-          fontFamily: pdfFontFamily,
-          fontSize: pxToPt(RESUME_LAYOUT_PX.sectionTitleFontSize),
-          fontWeight: 'bold',
-          letterSpacing: pxToPt(RESUME_LAYOUT_PX.sectionTitleLetterSpacing),
-        });
         const sectionBodyStyle = {
           ...previewStyles.sectionBody,
           marginTop: getSectionBodyMarginTopPx(visibleBlocks[0] ?? null),
         };
+        const sectionStyle = {
+          ...previewStyles.section,
+          marginTop: getResumeSectionMarginTopPx(visibleSectionIndex, hasSummary),
+        };
+        visibleSectionIndex += 1;
 
         return (
-          <section key={section.id} data-preview-section-id={section.id} style={previewStyles.section}>
-            <h2 style={previewStyles.sectionTitle}>{wrappedSectionTitle}</h2>
+          <section key={section.id} data-preview-section-id={section.id} style={sectionStyle}>
+            <h2 style={previewStyles.sectionTitle}>{section.itemName}</h2>
 
             {hiddenEntryAnchors.length > 0 || hiddenSubEntryAnchors.length > 0 ? (
               <div style={previewStyles.anchor}>
@@ -218,37 +145,16 @@ export const GeneratedResumePreview: React.FC<GeneratedResumePreviewProps> = ({ 
                     : undefined;
 
                 if (block.kind === 'entry') {
-                  const entryMarkWidth = block.mark
-                    ? measurePdfTextWidth(block.mark, {
-                        fontFamily: pdfFontFamily,
-                        fontSize: pxToPt(RESUME_LAYOUT_PX.entryMarkFontSize),
-                      })
-                    : 0;
-                  const wrappedEntryTitle = wrapPdfTextToString(block.title, {
-                    maxWidth: block.mark
-                      ? Math.max(PAGE_CONTENT_WIDTH_PT - entryMarkWidth - ENTRY_TITLE_GAP_PT, MIN_ENTRY_TITLE_WIDTH_PT)
-                      : PAGE_CONTENT_WIDTH_PT,
-                    fontFamily: pdfFontFamily,
-                    fontSize: pxToPt(RESUME_LAYOUT_PX.entryTitleFontSize),
-                    fontWeight: 'bold',
-                  });
-
                   return (
                     <div key={block.id} data-preview-entry-id={block.id} style={wrapperStyle}>
                       <div style={previewStyles.entryHeader}>
-                        <h3 style={previewStyles.entryTitle}>{wrappedEntryTitle}</h3>
+                        <h3 style={previewStyles.entryTitle}>{block.title}</h3>
                         {block.mark ? <span style={previewStyles.entryMark}>{block.mark}</span> : null}
                       </div>
 
                       {block.lines.map((line, lineIndex) => {
                         return (
-                          <p key={line.id} style={getParagraphStyle(lineIndex)}>
-                            {wrapPdfTextToString(line.text, {
-                              maxWidth: PAGE_CONTENT_WIDTH_PT,
-                              fontFamily: pdfFontFamily,
-                              fontSize: pxToPt(RESUME_LAYOUT_PX.paragraphFontSize),
-                            })}
-                          </p>
+                          <p key={line.id} style={getParagraphStyle(lineIndex)}>{line.text}</p>
                         );
                       })}
                     </div>
@@ -259,13 +165,7 @@ export const GeneratedResumePreview: React.FC<GeneratedResumePreviewProps> = ({ 
                   <div key={block.id} data-preview-sub-entry-id={block.id} style={wrapperStyle}>
                     {block.lines.map((line, lineIndex) => {
                       return (
-                        <p key={line.id} style={getParagraphStyle(lineIndex)}>
-                          {wrapPdfTextToString(line.text, {
-                            maxWidth: PAGE_CONTENT_WIDTH_PT,
-                            fontFamily: pdfFontFamily,
-                            fontSize: pxToPt(RESUME_LAYOUT_PX.paragraphFontSize),
-                          })}
-                        </p>
+                        <p key={line.id} style={getParagraphStyle(lineIndex)}>{line.text}</p>
                       );
                     })}
                   </div>
