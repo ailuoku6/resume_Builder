@@ -27,7 +27,7 @@ export const GeneratedResumePreview: React.FC<GeneratedResumePreviewProps> = ({ 
   ].filter((item) => item.value.trim());
 
   return (
-    <article className={`resume-preview-page ${previewFontClassName}`}>
+    <article className={`resume-preview-page ${previewFontClassName}`} data-preview-id="base-info">
       <header className={`resume-preview-hero${hasSummary ? ' resume-preview-hero--with-divider' : ''}`}>
         <div className="resume-preview-hero-main">
           {data.avatar ? (
@@ -73,7 +73,7 @@ export const GeneratedResumePreview: React.FC<GeneratedResumePreviewProps> = ({ 
 
       {visibleSections.map((section) => {
         return (
-          <section key={section.id} className="resume-preview-section">
+          <section key={section.id} className="resume-preview-section" data-preview-section-id={section.id}>
             <h2 className="resume-preview-section-title">{section.itemName}</h2>
 
             <div className="resume-preview-section-body">
@@ -81,7 +81,7 @@ export const GeneratedResumePreview: React.FC<GeneratedResumePreviewProps> = ({ 
                 const detailLines = splitResumeTextLines(entryItem.detail);
 
                 return (
-                  <div key={entryItem.id} className="resume-preview-entry">
+                  <div key={entryItem.id} className="resume-preview-entry" data-preview-entry-id={entryItem.id}>
                     <div className="resume-preview-entry-header">
                       <h3 className="resume-preview-entry-title">{entryItem.title || '未命名条目'}</h3>
                       {entryItem.mark.trim() ? (
@@ -112,7 +112,11 @@ export const GeneratedResumePreview: React.FC<GeneratedResumePreviewProps> = ({ 
                 const lines = splitResumeTextLines(subEntryItem.name);
 
                 return (
-                  <div key={subEntryItem.id} className="resume-preview-entry resume-preview-entry--compact">
+                  <div
+                    key={subEntryItem.id}
+                    className="resume-preview-entry resume-preview-entry--compact"
+                    data-preview-sub-entry-id={subEntryItem.id}
+                  >
                     {lines.map((line, index) => {
                       const bullet = isBulletLine(line);
                       const content = normalizeBulletLine(line);

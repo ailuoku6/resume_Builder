@@ -32,7 +32,10 @@ const SectionEditorBase: React.FC<SectionEditorProps> = ({ store, section }) => 
   const sectionCollapsed = section.hidden;
 
   return (
-    <section className={`section-editor${section.hidden ? ' section-editor--hidden' : ''}`}>
+    <section
+      className={`section-editor${section.hidden ? ' section-editor--hidden' : ''}`}
+      data-section-id={section.id}
+    >
       <div className="section-editor__header">
         <div className="section-editor__title-row">
           <span className="section-editor__drag">⋮⋮</span>
@@ -106,6 +109,7 @@ const SectionEditorBase: React.FC<SectionEditorProps> = ({ store, section }) => 
                 <div
                   key={entryItem.id}
                   className={`entry-editor-card${entryItem.hidden ? ' entry-editor-card--hidden' : ''}`}
+                  data-entry-id={entryItem.id}
                 >
                   <div className="entry-editor-card__top">
                     <div className="entry-editor-card__top-meta">
@@ -222,6 +226,7 @@ const SectionEditorBase: React.FC<SectionEditorProps> = ({ store, section }) => 
                   className={`entry-editor-card entry-editor-card--compact${
                     subEntryItem.hidden ? ' entry-editor-card--hidden' : ''
                   }`}
+                  data-sub-entry-id={subEntryItem.id}
                 >
                   <div className="entry-editor-card__top">
                     <div className="entry-editor-card__top-meta">

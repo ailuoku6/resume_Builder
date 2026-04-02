@@ -1,4 +1,5 @@
 import React from 'react';
+import { Popper } from '@material-ui/core';
 import { pdf } from '@react-pdf/renderer';
 import { observer } from 'kisstate';
 import ReactSortable from 'react-sortablejs';
@@ -52,6 +53,15 @@ const getSortIndexes = (evt: {
   return [evt.oldIndex, evt.newIndex];
 };
 
+const getPreviewSummary = (value: string, fallback: string): string => {
+  const firstLine = value
+    .split(/\r?\n/)
+    .map((item) => item.trim())
+    .find(Boolean);
+
+  return firstLine || fallback;
+};
+
 const hasStoredResumeSnapshot = (): boolean => {
   if (typeof window === 'undefined') {
     return false;
@@ -86,10 +96,99 @@ const ResumeBuilderPageBase: React.FC = () => {
   const latestCloudDraftSyncedUserIdRef = React.useRef<string | null>(null);
   const lastPersistedSnapshotRef = React.useRef(JSON.stringify(resumeStore.resumeData));
   const hasInitializedAutoSaveRef = React.useRef(false);
+  const previewCloseTimerRef = React.useRef<number | null>(null);
+  const [activePreviewSectionId, setActivePreviewSectionId] = React.useState<string | null>(null);
+  const [previewAnchorEl, setPreviewAnchorEl] = React.useState<HTMLElement | null>(null);
   const navigationSections = resumeStore.items.map((section) => ({
     id: section.id,
     label: section.itemName.trim() || '未命名分区',
   }));
+  const activePreviewSection =
+    resumeStore.items.find((section) => section.id === activePreviewSectionId) ?? null;
+
+  const clearPreviewCloseTimer = React.useCallback(() => {
+    if (previewCloseTimerRef.current !== null) {
+      window.clearTimeout(previewCloseTimerRef.current);
+      previewCloseTimerRef.current = null;
+    }
+  }, []);
+
+  const closePreview = React.useCallback(() => {
+    clearPreviewCloseTimer();
+    setActivePreviewSectionId(null);
+    setPreviewAnchorEl(null);
+  }, [clearPreviewCloseTimer]);
+
+  const schedulePreviewClose = React.useCallback(() => {
+    clearPreviewCloseTimer();
+    previewCloseTimerRef.current = window.setTimeout(() => {
+      setActivePreviewSectionId(null);
+      setPreviewAnchorEl(null);
+    }, 120);
+  }, [clearPreviewCloseTimer]);
+
+  const openPreview = React.useCallback(
+    (sectionId: string, anchorEl: HTMLElement) => {
+      clearPreviewCloseTimer();
+      setActivePreviewSectionId(sectionId);
+      setPreviewAnchorEl(anchorEl);
+    },
+    [clearPreviewCloseTimer],
+  );
+
+  const scrollToTargets = React.useCallback((selectors: string[]) => {
+    if (typeof document === 'undefined') {
+      return;
+    }
+
+    selectors.forEach((selector) => {
+      const target = document.querySelector<HTMLElement>(selector);
+
+      if (!target) {
+        return;
+      }
+
+      target.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+    });
+  }, []);
+
+  const handleBaseInfoNavigation = React.useCallback(() => {
+    scrollToTargets(['[data-scroll-id="base-info"]', '[data-preview-id="base-info"]']);
+    closePreview();
+  }, [closePreview, scrollToTargets]);
+
+  const handleSectionNavigation = React.useCallback(
+    (sectionId: string) => {
+      scrollToTargets([
+        `[data-section-id="${sectionId}"]`,
+        `[data-preview-section-id="${sectionId}"]`,
+      ]);
+      closePreview();
+    },
+    [closePreview, scrollToTargets],
+  );
+
+  const handleEntryNavigation = React.useCallback(
+    (entryId: string) => {
+      scrollToTargets([`[data-entry-id="${entryId}"]`, `[data-preview-entry-id="${entryId}"]`]);
+      closePreview();
+    },
+    [closePreview, scrollToTargets],
+  );
+
+  const handleSubEntryNavigation = React.useCallback(
+    (subEntryId: string) => {
+      scrollToTargets([
+        `[data-sub-entry-id="${subEntryId}"]`,
+        `[data-preview-sub-entry-id="${subEntryId}"]`,
+      ]);
+      closePreview();
+    },
+    [closePreview, scrollToTargets],
+  );
 
   React.useEffect(() => {
     if (!authStore.token) {
@@ -135,8 +234,22 @@ const ResumeBuilderPageBase: React.FC = () => {
       if (saveLabelTimerRef.current !== null) {
         window.clearTimeout(saveLabelTimerRef.current);
       }
+
+      clearPreviewCloseTimer();
     };
-  }, []);
+  }, [clearPreviewCloseTimer]);
+
+  React.useEffect(() => {
+    if (!activePreviewSectionId) {
+      return;
+    }
+
+    const targetSection = resumeStore.items.find((section) => section.id === activePreviewSectionId);
+
+    if (!targetSection) {
+      closePreview();
+    }
+  }, [activePreviewSectionId, closePreview, resumeStore.items]);
 
   React.useEffect(() => {
     if (!authStore.isAuthenticated || !authStore.user) {
@@ -587,7 +700,13 @@ const ResumeBuilderPageBase: React.FC = () => {
         </div>
 
         <nav className="builder-nav" aria-label="简历分区">
-          <span className="builder-nav__item builder-nav__item--fixed">个人信息</span>
+          <button
+            type="button"
+            className="builder-nav__item builder-nav__item--fixed builder-nav__item--action"
+            onClick={handleBaseInfoNavigation}
+          >
+            个人信息
+          </button>
 
           <ReactSortable
             className="builder-nav__sortable"
@@ -605,20 +724,204 @@ const ResumeBuilderPageBase: React.FC = () => {
               easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
               handle: '.builder-nav__drag',
               ghostClass: 'builder-nav__item--ghost',
+              onChoose: () => {
+                closePreview();
+              },
             }}
           >
             {navigationSections.map((section) => {
               return (
-                <span key={section.id} className="builder-nav__item builder-nav__item--sortable">
+                <button
+                  key={section.id}
+                  type="button"
+                  className="builder-nav__item builder-nav__item--sortable builder-nav__item--action"
+                  onClick={() => {
+                    handleSectionNavigation(section.id);
+                  }}
+                  onMouseEnter={(event) => {
+                    openPreview(section.id, event.currentTarget);
+                  }}
+                  onMouseLeave={() => {
+                    schedulePreviewClose();
+                  }}
+                  onFocus={(event) => {
+                    openPreview(section.id, event.currentTarget);
+                  }}
+                  onBlur={() => {
+                    schedulePreviewClose();
+                  }}
+                >
                   <span className="builder-nav__drag" aria-hidden="true">
                     ⋮⋮
                   </span>
                   <span>{section.label}</span>
-                </span>
+                </button>
               );
             })}
           </ReactSortable>
         </nav>
+
+        <Popper
+          open={Boolean(activePreviewSection && previewAnchorEl)}
+          anchorEl={previewAnchorEl}
+          placement="bottom-start"
+          className="builder-nav-preview-popper"
+        >
+          {activePreviewSection ? (
+            <div
+              className="builder-nav-preview"
+              onMouseEnter={() => {
+                clearPreviewCloseTimer();
+              }}
+              onMouseLeave={() => {
+                schedulePreviewClose();
+              }}
+            >
+              <div className="builder-nav-preview__header">
+                <div>
+                  <p className="builder-nav-preview__eyebrow">Section Outline</p>
+                  <h3 className="builder-nav-preview__title">{activePreviewSection.itemName || '未命名分区'}</h3>
+                </div>
+                <button
+                  type="button"
+                  className="builder-nav-preview__jump"
+                  onClick={() => {
+                    handleSectionNavigation(activePreviewSection.id);
+                  }}
+                >
+                  前往
+                </button>
+              </div>
+
+              {activePreviewSection.entry.length > 0 ? (
+                <div className="builder-nav-preview__group">
+                  <div className="builder-nav-preview__group-header">
+                    <span className="builder-nav-preview__group-title">经历条目</span>
+                    <span className="builder-nav-preview__group-meta">
+                      {activePreviewSection.entry.length} 项
+                    </span>
+                  </div>
+
+                  <ReactSortable
+                    className="builder-nav-preview__list"
+                    onChange={(_order, _sortable, evt) => {
+                      const indexes = getSortIndexes(evt);
+
+                      if (!indexes) {
+                        return;
+                      }
+
+                      resumeStore.reorderEntry(activePreviewSection.id, indexes[0], indexes[1]);
+                    }}
+                    options={{
+                      animation: 160,
+                      easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+                      handle: '.builder-nav-preview__drag',
+                      ghostClass: 'builder-nav-preview__item--ghost',
+                    }}
+                  >
+                    {activePreviewSection.entry.map((entryItem) => {
+                      return (
+                        <button
+                          key={entryItem.id}
+                          type="button"
+                          className="builder-nav-preview__item"
+                          onClick={(event) => {
+                            if ((event.target as HTMLElement).closest('.builder-nav-preview__drag')) {
+                              return;
+                            }
+
+                            handleEntryNavigation(entryItem.id);
+                          }}
+                        >
+                          <span className="builder-nav-preview__drag" aria-hidden="true">
+                            ⋮⋮
+                          </span>
+                          <span className="builder-nav-preview__item-body">
+                            <span className="builder-nav-preview__item-title">
+                              {entryItem.title.trim() || '未命名经历条目'}
+                            </span>
+                            <span className="builder-nav-preview__item-subtitle">
+                              {entryItem.mark.trim() || '未填写时间'}
+                            </span>
+                            <span className="builder-nav-preview__item-copy">
+                              {getPreviewSummary(entryItem.detail, '点击前往编辑该经历条目')}
+                            </span>
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </ReactSortable>
+                </div>
+              ) : null}
+
+              {activePreviewSection.subEntry.length > 0 ? (
+                <div className="builder-nav-preview__group">
+                  <div className="builder-nav-preview__group-header">
+                    <span className="builder-nav-preview__group-title">列表项</span>
+                    <span className="builder-nav-preview__group-meta">
+                      {activePreviewSection.subEntry.length} 项
+                    </span>
+                  </div>
+
+                  <ReactSortable
+                    className="builder-nav-preview__list"
+                    onChange={(_order, _sortable, evt) => {
+                      const indexes = getSortIndexes(evt);
+
+                      if (!indexes) {
+                        return;
+                      }
+
+                      resumeStore.reorderSubEntry(activePreviewSection.id, indexes[0], indexes[1]);
+                    }}
+                    options={{
+                      animation: 160,
+                      easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+                      handle: '.builder-nav-preview__drag',
+                      ghostClass: 'builder-nav-preview__item--ghost',
+                    }}
+                  >
+                    {activePreviewSection.subEntry.map((subEntryItem) => {
+                      return (
+                        <button
+                          key={subEntryItem.id}
+                          type="button"
+                          className="builder-nav-preview__item builder-nav-preview__item--compact"
+                          onClick={(event) => {
+                            if ((event.target as HTMLElement).closest('.builder-nav-preview__drag')) {
+                              return;
+                            }
+
+                            handleSubEntryNavigation(subEntryItem.id);
+                          }}
+                        >
+                          <span className="builder-nav-preview__drag" aria-hidden="true">
+                            ⋮⋮
+                          </span>
+                          <span className="builder-nav-preview__item-body">
+                            <span className="builder-nav-preview__item-title">
+                              {getPreviewSummary(subEntryItem.name, '未命名列表项')}
+                            </span>
+                            <span className="builder-nav-preview__item-copy">
+                              点击前往编辑该列表项
+                            </span>
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </ReactSortable>
+                </div>
+              ) : null}
+
+              {activePreviewSection.entry.length === 0 && activePreviewSection.subEntry.length === 0 ? (
+                <div className="builder-nav-preview__empty">
+                  这个分区里还没有经历条目或列表项。点击“前往”后可以继续添加内容。
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+        </Popper>
 
         <div className="builder-actions">
           {authStore.isAuthenticated ? (

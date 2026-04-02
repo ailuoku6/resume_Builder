@@ -30,7 +30,7 @@ const Field: React.FC<FieldProps> = ({ label, children, className, hint }) => {
 
 const BaseInfoFormBase: React.FC<BaseInfoFormProps> = ({ store }) => {
   return (
-    <section className="editor-card editor-card--hero">
+    <section className="editor-card editor-card--hero" data-scroll-id="base-info">
       <div className="editor-card__header">
         <div>
           <p className="editor-card__eyebrow">Personal Profile</p>
