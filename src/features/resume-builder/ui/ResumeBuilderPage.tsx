@@ -97,6 +97,9 @@ const ResumeBuilderPageBase: React.FC = () => {
   const lastPersistedSnapshotRef = React.useRef(JSON.stringify(resumeStore.resumeData));
   const hasInitializedAutoSaveRef = React.useRef(false);
   const previewCloseTimerRef = React.useRef<number | null>(null);
+  const navClickSuppressTimerRef = React.useRef<number | null>(null);
+  const navClickSuppressRef = React.useRef(false);
+  const isNavSortingRef = React.useRef(false);
   const [activePreviewSectionId, setActivePreviewSectionId] = React.useState<string | null>(null);
   const [previewAnchorEl, setPreviewAnchorEl] = React.useState<HTMLElement | null>(null);
   const navigationSections = resumeStore.items.map((section) => ({
@@ -110,6 +113,13 @@ const ResumeBuilderPageBase: React.FC = () => {
     if (previewCloseTimerRef.current !== null) {
       window.clearTimeout(previewCloseTimerRef.current);
       previewCloseTimerRef.current = null;
+    }
+  }, []);
+
+  const clearNavClickSuppressTimer = React.useCallback(() => {
+    if (navClickSuppressTimerRef.current !== null) {
+      window.clearTimeout(navClickSuppressTimerRef.current);
+      navClickSuppressTimerRef.current = null;
     }
   }, []);
 
@@ -129,6 +139,10 @@ const ResumeBuilderPageBase: React.FC = () => {
 
   const openPreview = React.useCallback(
     (sectionId: string, anchorEl: HTMLElement) => {
+      if (isNavSortingRef.current) {
+        return;
+      }
+
       clearPreviewCloseTimer();
       setActivePreviewSectionId(sectionId);
       setPreviewAnchorEl(anchorEl);
@@ -236,8 +250,9 @@ const ResumeBuilderPageBase: React.FC = () => {
       }
 
       clearPreviewCloseTimer();
+      clearNavClickSuppressTimer();
     };
-  }, [clearPreviewCloseTimer]);
+  }, [clearNavClickSuppressTimer, clearPreviewCloseTimer]);
 
   React.useEffect(() => {
     if (!activePreviewSectionId) {
@@ -725,7 +740,16 @@ const ResumeBuilderPageBase: React.FC = () => {
               handle: '.builder-nav__drag',
               ghostClass: 'builder-nav__item--ghost',
               onChoose: () => {
-                closePreview();
+                clearNavClickSuppressTimer();
+                navClickSuppressRef.current = true;
+                isNavSortingRef.current = true;
+              },
+              onEnd: () => {
+                clearNavClickSuppressTimer();
+                navClickSuppressTimerRef.current = window.setTimeout(() => {
+                  navClickSuppressRef.current = false;
+                  isNavSortingRef.current = false;
+                }, 0);
               },
             }}
           >
@@ -735,23 +759,55 @@ const ResumeBuilderPageBase: React.FC = () => {
                   key={section.id}
                   type="button"
                   className="builder-nav__item builder-nav__item--sortable builder-nav__item--action"
-                  onClick={() => {
+                  onClick={(event) => {
+                    if (
+                      isNavSortingRef.current ||
+                      navClickSuppressRef.current ||
+                      (event.target as HTMLElement).closest('.builder-nav__drag')
+                    ) {
+                      event.preventDefault();
+                      return;
+                    }
+
                     handleSectionNavigation(section.id);
                   }}
                   onMouseEnter={(event) => {
+                    if (isNavSortingRef.current) {
+                      return;
+                    }
+
                     openPreview(section.id, event.currentTarget);
                   }}
                   onMouseLeave={() => {
+                    if (isNavSortingRef.current) {
+                      return;
+                    }
+
                     schedulePreviewClose();
                   }}
                   onFocus={(event) => {
+                    if (isNavSortingRef.current) {
+                      return;
+                    }
+
                     openPreview(section.id, event.currentTarget);
                   }}
                   onBlur={() => {
+                    if (isNavSortingRef.current) {
+                      return;
+                    }
+
                     schedulePreviewClose();
                   }}
                 >
-                  <span className="builder-nav__drag" aria-hidden="true">
+                  <span
+                    className="builder-nav__drag"
+                    aria-hidden="true"
+                    onClick={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                    }}
+                  >
                     ⋮⋮
                   </span>
                   <span>{section.label}</span>
