@@ -180,12 +180,15 @@ const styles = StyleSheet.create({
   paragraph: {
     marginTop: pt(4),
   },
+  paragraphFirst: {
+    marginTop: 0,
+  },
   paragraphText: {
     fontSize: pt(12),
     color: PDF_PREVIEW_COLORS.body,
   },
-  subEntryBlock: {
-    marginTop: pt(10),
+  subEntryItem: {
+    marginTop: pt(14),
   },
   emptyText: {
     marginTop: pt(12),
@@ -206,6 +209,9 @@ const renderLines = (
   lines: string[],
   keyPrefix: string,
   pageFontFamily: string,
+  options?: {
+    removeFirstParagraphMargin?: boolean;
+  },
 ): React.ReactNode => {
   return lines.map((line, index) => {
     const bullet = isBulletLine(line);
@@ -218,7 +224,14 @@ const renderLines = (
     });
 
     return (
-      <View key={`${keyPrefix}-${index}`} style={styles.paragraph}>
+      <View
+        key={`${keyPrefix}-${index}`}
+        style={
+          options?.removeFirstParagraphMargin && index === 0
+            ? [styles.paragraph, styles.paragraphFirst]
+            : styles.paragraph
+        }
+      >
         <CustomPdfText text={wrappedText} style={styles.paragraphText as never} />
       </View>
     );
@@ -274,13 +287,17 @@ const renderSection = (section: ResumeSection, pageFontFamily: string): React.Re
             })
           : null}
 
-        {hasSubEntries ? (
-          <View style={styles.subEntryBlock}>
-            {section.subEntry.map((subEntryItem) => {
-              return renderLines(splitResumeTextLines(subEntryItem.name || ''), subEntryItem.id, pageFontFamily);
-            })}
-          </View>
-        ) : null}
+        {hasSubEntries
+          ? section.subEntry.map((subEntryItem, index) => {
+              return (
+                <View key={subEntryItem.id} style={index > 0 ? styles.subEntryItem : undefined}>
+                  {renderLines(splitResumeTextLines(subEntryItem.name || ''), subEntryItem.id, pageFontFamily, {
+                    removeFirstParagraphMargin: true,
+                  })}
+                </View>
+              );
+            })
+          : null}
 
         {!hasEntries && !hasSubEntries ? (
           <Text style={styles.emptyText}>{buildCopySafePdfTextChildren('暂无内容')}</Text>
