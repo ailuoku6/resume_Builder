@@ -9,6 +9,8 @@ import {
   DEFAULT_RESUME_DATA,
   LEGACY_STORAGE_KEY,
   STORAGE_KEY,
+  getDefaultEntryForSection,
+  getDefaultSubEntryForSection,
   isResumeFontPreset,
 } from './constants';
 import type {
@@ -80,21 +82,19 @@ const normalizeSection = (value: unknown): ResumeSection => {
   };
 };
 
-const createEntry = (): ResumeEntry => {
+const createEntry = (sectionName: string): ResumeEntry => {
   return {
     id: createId(),
-    title: '大条目标题',
-    detail: '大条目详情',
-    mark: '2018-01 至 2020-3',
     hidden: false,
+    ...getDefaultEntryForSection(sectionName),
   };
 };
 
-const createSubEntry = (): ResumeSubEntry => {
+const createSubEntry = (sectionName: string): ResumeSubEntry => {
   return {
     id: createId(),
-    name: '小条目',
     hidden: false,
+    ...getDefaultSubEntryForSection(sectionName),
   };
 };
 
@@ -237,7 +237,7 @@ export class ResumeStore implements ResumeState {
   addEntry(sectionId: string): void {
     this.updateSection(sectionId, (section) => ({
       ...section,
-      entry: [...section.entry, createEntry()],
+      entry: [...section.entry, createEntry(section.itemName)],
     }));
   }
 
@@ -290,7 +290,7 @@ export class ResumeStore implements ResumeState {
   addSubEntry(sectionId: string): void {
     this.updateSection(sectionId, (section) => ({
       ...section,
-      subEntry: [...section.subEntry, createSubEntry()],
+      subEntry: [...section.subEntry, createSubEntry(section.itemName)],
     }));
   }
 
