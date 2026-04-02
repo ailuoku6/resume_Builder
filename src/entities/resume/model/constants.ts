@@ -14,17 +14,17 @@ export const CLOUD_DRAFT_ID_STORAGE_KEY = 'resume-builder:cloud-draft-id';
 export const CUSTOM_SECTION_PLACEHOLDER = '请输入大项名称，如教育背景';
 
 export const PRESET_SECTIONS: string[] = [
+  '教育背景',
+  '项目经历',
   '在校经历',
+  '职业技能',
   '竞赛经历',
   '获奖经历',
-  '论文期刊',
-  '兴趣爱好',
-  '考研信息',
-  '求职意向',
-  '项目经历',
-  '职业技能',
   '资格证书',
-  '教育背景',
+  '求职意向',
+  '论文期刊',
+  '考研信息',
+  '兴趣爱好',
 ];
 
 type EntryTemplate = Omit<ResumeEntry, 'id' | 'hidden'>;
