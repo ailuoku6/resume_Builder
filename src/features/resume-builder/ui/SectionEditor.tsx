@@ -74,7 +74,23 @@ const SectionEditorBase: React.FC<SectionEditorProps> = ({ store, section }) => 
       </div>
 
       {section.hidden ? (
-        <div className="section-editor__status">这个分区已隐藏，预览与导出都不会展示它的内容。</div>
+        <>
+          <div className="section-editor__status">这个分区已隐藏，预览与导出都不会展示它的内容。</div>
+          <div className="section-editor__anchor-group" aria-hidden="true">
+            {section.entry.map((entryItem) => {
+              return <div key={entryItem.id} className="section-editor__anchor" data-entry-id={entryItem.id} />;
+            })}
+            {section.subEntry.map((subEntryItem) => {
+              return (
+                <div
+                  key={subEntryItem.id}
+                  className="section-editor__anchor"
+                  data-sub-entry-id={subEntryItem.id}
+                />
+              );
+            })}
+          </div>
+        </>
       ) : null}
 
       {!sectionCollapsed && !hasContent ? (

@@ -2,7 +2,8 @@ import React from 'react';
 
 import { FONT_PRESET_CONFIG } from '@/entities/resume/model/font-presets';
 import {
-  getVisibleResumeSections,
+  getVisibleResumeEntries,
+  getVisibleResumeSubEntries,
   isBulletLine,
   normalizeBulletLine,
   splitResumeTextLines,
@@ -16,7 +17,6 @@ interface GeneratedResumePreviewProps {
 export const GeneratedResumePreview: React.FC<GeneratedResumePreviewProps> = ({ data }) => {
   const summaryLines = splitResumeTextLines(data.summary);
   const hasSummary = summaryLines.length > 0;
-  const visibleSections = getVisibleResumeSections(data.items);
   const previewFontClassName =
     FONT_PRESET_CONFIG[data.fontPreset]?.previewClassName ?? FONT_PRESET_CONFIG.oppo.previewClassName;
   const contactItems = [
@@ -71,13 +71,50 @@ export const GeneratedResumePreview: React.FC<GeneratedResumePreviewProps> = ({ 
         </section>
       ) : null}
 
-      {visibleSections.map((section) => {
+      {data.items.map((section) => {
+        const visibleEntries = getVisibleResumeEntries(section);
+        const visibleSubEntries = getVisibleResumeSubEntries(section);
+        const hiddenEntryAnchors = section.entry.filter(
+          (entryItem) => !visibleEntries.some((visibleItem) => visibleItem.id === entryItem.id),
+        );
+        const hiddenSubEntryAnchors = section.subEntry.filter(
+          (subEntryItem) => !visibleSubEntries.some((visibleItem) => visibleItem.id === subEntryItem.id),
+        );
+        const showVisibleSection =
+          !section.hidden && (visibleEntries.length > 0 || visibleSubEntries.length > 0);
+
+        if (!showVisibleSection) {
+          return (
+            <div key={section.id} className="resume-preview-anchor-group" data-preview-section-id={section.id}>
+              {section.entry.map((entryItem) => {
+                return (
+                  <div
+                    key={entryItem.id}
+                    className="resume-preview-anchor"
+                    data-preview-entry-id={entryItem.id}
+                  />
+                );
+              })}
+
+              {section.subEntry.map((subEntryItem) => {
+                return (
+                  <div
+                    key={subEntryItem.id}
+                    className="resume-preview-anchor"
+                    data-preview-sub-entry-id={subEntryItem.id}
+                  />
+                );
+              })}
+            </div>
+          );
+        }
+
         return (
           <section key={section.id} className="resume-preview-section" data-preview-section-id={section.id}>
             <h2 className="resume-preview-section-title">{section.itemName}</h2>
 
             <div className="resume-preview-section-body">
-              {section.entry.map((entryItem) => {
+              {visibleEntries.map((entryItem) => {
                 const detailLines = splitResumeTextLines(entryItem.detail);
 
                 return (
@@ -108,7 +145,17 @@ export const GeneratedResumePreview: React.FC<GeneratedResumePreviewProps> = ({ 
                 );
               })}
 
-              {section.subEntry.map((subEntryItem) => {
+              {hiddenEntryAnchors.map((entryItem) => {
+                return (
+                  <div
+                    key={entryItem.id}
+                    className="resume-preview-anchor"
+                    data-preview-entry-id={entryItem.id}
+                  />
+                );
+              })}
+
+              {visibleSubEntries.map((subEntryItem) => {
                 const lines = splitResumeTextLines(subEntryItem.name);
 
                 return (
@@ -133,6 +180,16 @@ export const GeneratedResumePreview: React.FC<GeneratedResumePreviewProps> = ({ 
                       );
                     })}
                   </div>
+                );
+              })}
+
+              {hiddenSubEntryAnchors.map((subEntryItem) => {
+                return (
+                  <div
+                    key={subEntryItem.id}
+                    className="resume-preview-anchor"
+                    data-preview-sub-entry-id={subEntryItem.id}
+                  />
                 );
               })}
             </div>

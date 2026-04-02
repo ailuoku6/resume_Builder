@@ -571,6 +571,14 @@
   margin-top: 14px;
 }
 
+.resume-preview-anchor-group,
+.resume-preview-anchor {
+  height: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
 @media (max-width: 720px) {
   .resume-preview-hero-main {
     flex-direction: column;
@@ -829,6 +837,14 @@
   font-size: 12px;
   font-weight: 700;
   line-height: 1.6;
+}
+
+.section-editor__anchor-group,
+.section-editor__anchor {
+  height: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
 }
 
 .section-editor__delete,
