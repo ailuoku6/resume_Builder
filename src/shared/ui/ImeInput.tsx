@@ -24,6 +24,10 @@ type EditableSelection = {
   direction?: 'forward' | 'backward' | 'none';
 };
 
+type PendingSelection = EditableSelection & {
+  expectedValue: string;
+};
+
 const readSelection = (element: EditableElement): EditableSelection | null => {
   if (typeof element.selectionStart !== 'number' || typeof element.selectionEnd !== 'number') {
     return null;
@@ -40,10 +44,21 @@ const useImeValue = (value: string, onValueChange: (value: string) => void) => {
   const [draftValue, setDraftValue] = React.useState(value);
   const [isComposing, setIsComposing] = React.useState(false);
   const elementRef = React.useRef<EditableElement | null>(null);
-  const pendingSelectionRef = React.useRef<EditableSelection | null>(null);
+  const pendingSelectionRef = React.useRef<PendingSelection | null>(null);
+  const compositionCommitRef = React.useRef<string | null>(null);
 
-  const rememberSelection = React.useCallback((element: EditableElement) => {
-    pendingSelectionRef.current = readSelection(element);
+  const rememberSelection = React.useCallback((element: EditableElement, nextValue: string) => {
+    const selection = readSelection(element);
+
+    if (!selection) {
+      pendingSelectionRef.current = null;
+      return;
+    }
+
+    pendingSelectionRef.current = {
+      ...selection,
+      expectedValue: nextValue,
+    };
   }, []);
 
   React.useLayoutEffect(() => {
@@ -66,7 +81,9 @@ const useImeValue = (value: string, onValueChange: (value: string) => void) => {
       return;
     }
 
-    pendingSelectionRef.current = null;
+    if (value === selection.expectedValue) {
+      pendingSelectionRef.current = null;
+    }
   }, [draftValue, isComposing, value]);
 
   React.useEffect(() => {
@@ -75,16 +92,18 @@ const useImeValue = (value: string, onValueChange: (value: string) => void) => {
     }
 
     setDraftValue(value);
-  }, [isComposing, value]);
+  }, [value]);
 
   const handleCompositionStart = React.useCallback(() => {
     pendingSelectionRef.current = null;
+    compositionCommitRef.current = null;
     setIsComposing(true);
   }, []);
 
   const handleCompositionEnd = React.useCallback(
     (nextValue: string, element: EditableElement) => {
-      rememberSelection(element);
+      rememberSelection(element, nextValue);
+      compositionCommitRef.current = nextValue;
       setIsComposing(false);
       setDraftValue(nextValue);
       onValueChange(nextValue);
@@ -94,13 +113,21 @@ const useImeValue = (value: string, onValueChange: (value: string) => void) => {
 
   const handleChange = React.useCallback(
     (nextValue: string, composing: boolean, element: EditableElement) => {
+      const isCompositionCommitEcho = compositionCommitRef.current === nextValue;
+
+      if (!isCompositionCommitEcho && compositionCommitRef.current !== null) {
+        compositionCommitRef.current = null;
+      }
+
       if (!composing && !isComposing) {
-        rememberSelection(element);
+        if (!isCompositionCommitEcho) {
+          rememberSelection(element, nextValue);
+        }
       }
 
       setDraftValue(nextValue);
 
-      if (composing || isComposing) {
+      if (composing || isComposing || isCompositionCommitEcho) {
         return;
       }
 
@@ -111,6 +138,7 @@ const useImeValue = (value: string, onValueChange: (value: string) => void) => {
 
   const handleBlur = React.useCallback(() => {
     pendingSelectionRef.current = null;
+    compositionCommitRef.current = null;
 
     if (draftValue !== value) {
       onValueChange(draftValue);
