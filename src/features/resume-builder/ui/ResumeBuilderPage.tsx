@@ -1,6 +1,7 @@
 import React from 'react';
 import { pdf } from '@react-pdf/renderer';
 import { observer } from 'kisstate';
+import ReactSortable from 'react-sortablejs';
 
 import { authStore } from '@/entities/auth/model/auth-store';
 import type { CloudDraftSummary } from '@/entities/auth/model/types';
@@ -36,10 +37,19 @@ const sanitizeFileName = (value: string): string => {
   return normalized || 'resume';
 };
 
-const buildNavigationItems = (): string[] => {
-  const labels = ['个人信息', ...resumeStore.items.map((section) => section.itemName.trim())].filter(Boolean);
+const getSortIndexes = (evt: {
+  oldIndex?: number;
+  newIndex?: number;
+}): [number, number] | null => {
+  if (typeof evt.oldIndex !== 'number' || typeof evt.newIndex !== 'number') {
+    return null;
+  }
 
-  return labels.slice(0, 5);
+  if (evt.oldIndex === evt.newIndex) {
+    return null;
+  }
+
+  return [evt.oldIndex, evt.newIndex];
 };
 
 const hasStoredResumeSnapshot = (): boolean => {
@@ -71,12 +81,15 @@ const ResumeBuilderPageBase: React.FC = () => {
   const [isExporting, setIsExporting] = React.useState(false);
   const [isSavingDraft, setIsSavingDraft] = React.useState(false);
   const [saveLabel, setSaveLabel] = React.useState('保存草稿');
-  const navigationItems = buildNavigationItems();
   const autoSaveTimerRef = React.useRef<number | null>(null);
   const saveLabelTimerRef = React.useRef<number | null>(null);
   const latestCloudDraftSyncedUserIdRef = React.useRef<string | null>(null);
   const lastPersistedSnapshotRef = React.useRef(JSON.stringify(resumeStore.resumeData));
   const hasInitializedAutoSaveRef = React.useRef(false);
+  const navigationSections = resumeStore.items.map((section) => ({
+    id: section.id,
+    label: section.itemName.trim() || '未命名分区',
+  }));
 
   React.useEffect(() => {
     if (!authStore.token) {
@@ -574,13 +587,37 @@ const ResumeBuilderPageBase: React.FC = () => {
         </div>
 
         <nav className="builder-nav" aria-label="简历分区">
-          {navigationItems.map((label, index) => {
-            return (
-              <span key={`${label}-${index}`} className="builder-nav__item">
-                {label}
-              </span>
-            );
-          })}
+          <span className="builder-nav__item builder-nav__item--fixed">个人信息</span>
+
+          <ReactSortable
+            className="builder-nav__sortable"
+            onChange={(_order, _sortable, evt) => {
+              const indexes = getSortIndexes(evt);
+
+              if (!indexes) {
+                return;
+              }
+
+              resumeStore.reorderSections(indexes[0], indexes[1]);
+            }}
+            options={{
+              animation: 180,
+              easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+              handle: '.builder-nav__drag',
+              ghostClass: 'builder-nav__item--ghost',
+            }}
+          >
+            {navigationSections.map((section) => {
+              return (
+                <span key={section.id} className="builder-nav__item builder-nav__item--sortable">
+                  <span className="builder-nav__drag" aria-hidden="true">
+                    ⋮⋮
+                  </span>
+                  <span>{section.label}</span>
+                </span>
+              );
+            })}
+          </ReactSortable>
         </nav>
 
         <div className="builder-actions">
