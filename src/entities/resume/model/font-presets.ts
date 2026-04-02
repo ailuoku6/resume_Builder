@@ -1,9 +1,9 @@
-// Add future font presets here. The selector UI, preview class, and PDF export
-// family all derive from this registry.
+// Add future font presets here. The selector UI, preview font family, and PDF
+// export family all derive from this registry.
 export const FONT_PRESET_CONFIG = {
   oppo: {
     label: 'OPPOSans',
-    previewClassName: 'resume-preview-page--oppo',
+    previewFontFamily: '"ResumeOppo", "PingFang SC", "Microsoft YaHei", sans-serif',
     pdfFontFamily: 'oppoFont',
   },
 } as const;

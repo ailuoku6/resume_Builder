@@ -4,47 +4,113 @@ import { FONT_PRESET_CONFIG } from '@/entities/resume/model/font-presets';
 import {
   getVisibleResumeEntries,
   getVisibleResumeSubEntries,
-  isBulletLine,
-  normalizeBulletLine,
-  splitResumeTextLines,
 } from '@/entities/resume/model/visibility';
 import type { ResumeData } from '@/entities/resume/model/types';
+import {
+  CONTACT_ITEM_HORIZONTAL_PADDING_PT,
+  ENTRY_TITLE_GAP_PT,
+  MIN_ENTRY_TITLE_WIDTH_PT,
+  PAGE_CONTENT_WIDTH_PT,
+  RESUME_LAYOUT_PX,
+  createResumePreviewStyles,
+  getHeroTextWidthPt,
+  getResumeBlockWrapperMarginTopPx,
+  getSectionBodyMarginTopPx,
+  pxToPt,
+} from '@/features/resume-preview/model/layout';
+import {
+  buildResumeContactItems,
+  buildResumeSectionBlocks,
+  buildResumeSummaryLines,
+} from '@/features/resume-preview/model/render-model';
+
+import { ensurePdfMeasurementFontsReady, measurePdfTextWidth, wrapPdfTextToString } from './pdf-text-layout';
 
 interface GeneratedResumePreviewProps {
   data: ResumeData;
 }
 
 export const GeneratedResumePreview: React.FC<GeneratedResumePreviewProps> = ({ data }) => {
-  const summaryLines = splitResumeTextLines(data.summary);
+  const [, forceFontRefresh] = React.useState(0);
+
+  React.useEffect(() => {
+    let cancelled = false;
+
+    const prepareFonts = async (): Promise<void> => {
+      try {
+        await ensurePdfMeasurementFontsReady();
+      } catch (error) {
+        console.warn('Failed to prepare preview measurement fonts.', error);
+      } finally {
+        if (!cancelled) {
+          forceFontRefresh((value) => value + 1);
+        }
+      }
+    };
+
+    void prepareFonts();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [data.fontPreset]);
+
+  const summaryLines = buildResumeSummaryLines(data.summary);
   const hasSummary = summaryLines.length > 0;
-  const previewFontClassName =
-    FONT_PRESET_CONFIG[data.fontPreset]?.previewClassName ?? FONT_PRESET_CONFIG.oppo.previewClassName;
-  const contactItems = [
-    { label: 'Phone', value: data.phoneNum },
-    { label: 'Email', value: data.email },
-    { label: 'Location', value: data.liveAddress },
-    { label: 'Gender', value: data.sex },
-  ].filter((item) => item.value.trim());
+  const previewFontFamily =
+    FONT_PRESET_CONFIG[data.fontPreset]?.previewFontFamily ?? FONT_PRESET_CONFIG.oppo.previewFontFamily;
+  const pdfFontFamily =
+    FONT_PRESET_CONFIG[data.fontPreset]?.pdfFontFamily ?? FONT_PRESET_CONFIG.oppo.pdfFontFamily;
+  const previewStyles = createResumePreviewStyles(previewFontFamily);
+  const heroTextWidth = getHeroTextWidthPt(Boolean(data.avatar));
+  const wrappedName = wrapPdfTextToString(data.name || '未命名候选人', {
+    maxWidth: heroTextWidth,
+    fontFamily: pdfFontFamily,
+    fontSize: pxToPt(RESUME_LAYOUT_PX.nameFontSize),
+    fontWeight: 'bold',
+    letterSpacing: pxToPt(RESUME_LAYOUT_PX.nameLetterSpacing),
+  });
+  const wrappedHeadline = data.headline.trim()
+    ? wrapPdfTextToString(data.headline, {
+        maxWidth: heroTextWidth,
+        fontFamily: pdfFontFamily,
+        fontSize: pxToPt(RESUME_LAYOUT_PX.headlineFontSize),
+        fontWeight: 'bold',
+        letterSpacing: pxToPt(RESUME_LAYOUT_PX.headlineLetterSpacing),
+      })
+    : '';
+  const contactItems = buildResumeContactItems(data).map((item) => ({
+    ...item,
+    wrappedValue: wrapPdfTextToString(item.value, {
+      maxWidth: heroTextWidth - CONTACT_ITEM_HORIZONTAL_PADDING_PT,
+      fontFamily: pdfFontFamily,
+      fontSize: pxToPt(RESUME_LAYOUT_PX.contactValueFontSize),
+    }),
+  }));
+  const rootHeroStyle = hasSummary
+    ? { ...previewStyles.hero, ...previewStyles.heroWithDivider }
+    : previewStyles.hero;
+  const getParagraphStyle = (index: number): React.CSSProperties => {
+    return index === 0 ? { ...previewStyles.paragraph, marginTop: 0 } : previewStyles.paragraph;
+  };
 
   return (
-    <article className={`resume-preview-page ${previewFontClassName}`} data-preview-id="base-info">
-      <header className={`resume-preview-hero${hasSummary ? ' resume-preview-hero--with-divider' : ''}`}>
-        <div className="resume-preview-hero-main">
-          {data.avatar ? (
-            <img className="resume-preview-avatar" src={data.avatar} alt={data.name || 'resume avatar'} />
-          ) : null}
+    <article data-preview-id="base-info" style={previewStyles.page}>
+      <header style={rootHeroStyle}>
+        <div style={previewStyles.heroMain}>
+          {data.avatar ? <img style={previewStyles.avatar} src={data.avatar} alt={data.name || 'resume avatar'} /> : null}
 
-          <div className="resume-preview-hero-content">
-            <h1 className="resume-preview-name">{data.name || '未命名候选人'}</h1>
-            {data.headline.trim() ? <p className="resume-preview-headline">{data.headline}</p> : null}
+          <div style={previewStyles.heroContent}>
+            <h1 style={previewStyles.name}>{wrappedName}</h1>
+            {data.headline.trim() ? <p style={previewStyles.headline}>{wrappedHeadline}</p> : null}
 
             {contactItems.length > 0 ? (
-              <div className="resume-preview-contact-list">
+              <div style={previewStyles.contactRow}>
                 {contactItems.map((item) => {
                   return (
-                    <div key={item.label} className="resume-preview-contact-item">
-                      <span className="resume-preview-contact-label">{item.label}</span>
-                      <span className="resume-preview-contact-value">{item.value}</span>
+                    <div key={item.label} style={previewStyles.contactItem}>
+                      <span style={previewStyles.contactLabel}>{item.label}</span>
+                      <span style={previewStyles.contactValue}>{item.wrappedValue}</span>
                     </div>
                   );
                 })}
@@ -55,15 +121,25 @@ export const GeneratedResumePreview: React.FC<GeneratedResumePreviewProps> = ({ 
       </header>
 
       {hasSummary ? (
-        <section className="resume-preview-section">
-          <h2 className="resume-preview-section-title resume-preview-section-title--plain">
-            Profile / 个人简介
+        <section style={previewStyles.section}>
+          <h2 style={{ ...previewStyles.sectionTitle, ...previewStyles.sectionTitlePlain }}>
+            {wrapPdfTextToString('Profile / 个人简介', {
+              maxWidth: PAGE_CONTENT_WIDTH_PT,
+              fontFamily: pdfFontFamily,
+              fontSize: pxToPt(RESUME_LAYOUT_PX.sectionTitleFontSize),
+              fontWeight: 'bold',
+              letterSpacing: pxToPt(RESUME_LAYOUT_PX.sectionTitleLetterSpacing),
+            })}
           </h2>
-          <div className="resume-preview-section-body">
+          <div style={previewStyles.sectionBody}>
             {summaryLines.map((line, index) => {
               return (
-                <p key={`summary-${index}`} className="resume-preview-paragraph">
-                  {line}
+                <p key={line.id} style={getParagraphStyle(index)}>
+                  {wrapPdfTextToString(line.text, {
+                    maxWidth: PAGE_CONTENT_WIDTH_PT,
+                    fontFamily: pdfFontFamily,
+                    fontSize: pxToPt(RESUME_LAYOUT_PX.paragraphFontSize),
+                  })}
                 </p>
               );
             })}
@@ -74,122 +150,125 @@ export const GeneratedResumePreview: React.FC<GeneratedResumePreviewProps> = ({ 
       {data.items.map((section) => {
         const visibleEntries = getVisibleResumeEntries(section);
         const visibleSubEntries = getVisibleResumeSubEntries(section);
+        const visibleBlocks = buildResumeSectionBlocks(section);
         const hiddenEntryAnchors = section.entry.filter(
           (entryItem) => !visibleEntries.some((visibleItem) => visibleItem.id === entryItem.id),
         );
         const hiddenSubEntryAnchors = section.subEntry.filter(
           (subEntryItem) => !visibleSubEntries.some((visibleItem) => visibleItem.id === subEntryItem.id),
         );
-        const showVisibleSection =
-          !section.hidden && (visibleEntries.length > 0 || visibleSubEntries.length > 0);
+        const showVisibleSection = !section.hidden && visibleBlocks.length > 0;
 
         if (!showVisibleSection) {
           return (
-            <div key={section.id} className="resume-preview-anchor-group" data-preview-section-id={section.id}>
+            <div key={section.id} data-preview-section-id={section.id} style={previewStyles.anchor}>
               {section.entry.map((entryItem) => {
-                return (
-                  <div
-                    key={entryItem.id}
-                    className="resume-preview-anchor"
-                    data-preview-entry-id={entryItem.id}
-                  />
-                );
+                return <div key={entryItem.id} data-preview-entry-id={entryItem.id} style={previewStyles.anchor} />;
               })}
 
               {section.subEntry.map((subEntryItem) => {
                 return (
-                  <div
-                    key={subEntryItem.id}
-                    className="resume-preview-anchor"
-                    data-preview-sub-entry-id={subEntryItem.id}
-                  />
+                  <div key={subEntryItem.id} data-preview-sub-entry-id={subEntryItem.id} style={previewStyles.anchor} />
                 );
               })}
             </div>
           );
         }
 
+        const wrappedSectionTitle = wrapPdfTextToString(section.itemName, {
+          maxWidth: PAGE_CONTENT_WIDTH_PT,
+          fontFamily: pdfFontFamily,
+          fontSize: pxToPt(RESUME_LAYOUT_PX.sectionTitleFontSize),
+          fontWeight: 'bold',
+          letterSpacing: pxToPt(RESUME_LAYOUT_PX.sectionTitleLetterSpacing),
+        });
+        const sectionBodyStyle = {
+          ...previewStyles.sectionBody,
+          marginTop: getSectionBodyMarginTopPx(visibleBlocks[0] ?? null),
+        };
+
         return (
-          <section key={section.id} className="resume-preview-section" data-preview-section-id={section.id}>
-            <h2 className="resume-preview-section-title">{section.itemName}</h2>
+          <section key={section.id} data-preview-section-id={section.id} style={previewStyles.section}>
+            <h2 style={previewStyles.sectionTitle}>{wrappedSectionTitle}</h2>
 
-            <div className="resume-preview-section-body">
-              {visibleEntries.map((entryItem) => {
-                const detailLines = splitResumeTextLines(entryItem.detail);
+            {hiddenEntryAnchors.length > 0 || hiddenSubEntryAnchors.length > 0 ? (
+              <div style={previewStyles.anchor}>
+                {hiddenEntryAnchors.map((entryItem) => {
+                  return <div key={entryItem.id} data-preview-entry-id={entryItem.id} style={previewStyles.anchor} />;
+                })}
 
-                return (
-                  <div key={entryItem.id} className="resume-preview-entry" data-preview-entry-id={entryItem.id}>
-                    <div className="resume-preview-entry-header">
-                      <h3 className="resume-preview-entry-title">{entryItem.title || '未命名条目'}</h3>
-                      {entryItem.mark.trim() ? (
-                        <span className="resume-preview-entry-mark">{entryItem.mark}</span>
-                      ) : null}
+                {hiddenSubEntryAnchors.map((subEntryItem) => {
+                  return (
+                    <div
+                      key={subEntryItem.id}
+                      data-preview-sub-entry-id={subEntryItem.id}
+                      style={previewStyles.anchor}
+                    />
+                  );
+                })}
+              </div>
+            ) : null}
+
+            <div style={sectionBodyStyle}>
+              {visibleBlocks.map((block, index) => {
+                const previousBlock = index > 0 ? visibleBlocks[index - 1] : null;
+                const wrapperStyle =
+                  previousBlock !== null
+                    ? { marginTop: getResumeBlockWrapperMarginTopPx(previousBlock, block) }
+                    : undefined;
+
+                if (block.kind === 'entry') {
+                  const entryMarkWidth = block.mark
+                    ? measurePdfTextWidth(block.mark, {
+                        fontFamily: pdfFontFamily,
+                        fontSize: pxToPt(RESUME_LAYOUT_PX.entryMarkFontSize),
+                      })
+                    : 0;
+                  const wrappedEntryTitle = wrapPdfTextToString(block.title, {
+                    maxWidth: block.mark
+                      ? Math.max(PAGE_CONTENT_WIDTH_PT - entryMarkWidth - ENTRY_TITLE_GAP_PT, MIN_ENTRY_TITLE_WIDTH_PT)
+                      : PAGE_CONTENT_WIDTH_PT,
+                    fontFamily: pdfFontFamily,
+                    fontSize: pxToPt(RESUME_LAYOUT_PX.entryTitleFontSize),
+                    fontWeight: 'bold',
+                  });
+
+                  return (
+                    <div key={block.id} data-preview-entry-id={block.id} style={wrapperStyle}>
+                      <div style={previewStyles.entryHeader}>
+                        <h3 style={previewStyles.entryTitle}>{wrappedEntryTitle}</h3>
+                        {block.mark ? <span style={previewStyles.entryMark}>{block.mark}</span> : null}
+                      </div>
+
+                      {block.lines.map((line, lineIndex) => {
+                        return (
+                          <p key={line.id} style={getParagraphStyle(lineIndex)}>
+                            {wrapPdfTextToString(line.text, {
+                              maxWidth: PAGE_CONTENT_WIDTH_PT,
+                              fontFamily: pdfFontFamily,
+                              fontSize: pxToPt(RESUME_LAYOUT_PX.paragraphFontSize),
+                            })}
+                          </p>
+                        );
+                      })}
                     </div>
+                  );
+                }
 
-                    {detailLines.map((line, index) => {
-                      const bullet = isBulletLine(line);
-                      const content = normalizeBulletLine(line);
-
+                return (
+                  <div key={block.id} data-preview-sub-entry-id={block.id} style={wrapperStyle}>
+                    {block.lines.map((line, lineIndex) => {
                       return (
-                        <p
-                          key={`${entryItem.id}-${index}`}
-                          className={`resume-preview-paragraph${
-                            bullet ? ' resume-preview-paragraph--bullet' : ''
-                          }`}
-                        >
-                          {bullet ? `• ${content}` : content}
+                        <p key={line.id} style={getParagraphStyle(lineIndex)}>
+                          {wrapPdfTextToString(line.text, {
+                            maxWidth: PAGE_CONTENT_WIDTH_PT,
+                            fontFamily: pdfFontFamily,
+                            fontSize: pxToPt(RESUME_LAYOUT_PX.paragraphFontSize),
+                          })}
                         </p>
                       );
                     })}
                   </div>
-                );
-              })}
-
-              {hiddenEntryAnchors.map((entryItem) => {
-                return (
-                  <div
-                    key={entryItem.id}
-                    className="resume-preview-anchor"
-                    data-preview-entry-id={entryItem.id}
-                  />
-                );
-              })}
-
-              {visibleSubEntries.map((subEntryItem) => {
-                const lines = splitResumeTextLines(subEntryItem.name);
-
-                return (
-                  <div
-                    key={subEntryItem.id}
-                    className="resume-preview-entry resume-preview-entry--compact"
-                    data-preview-sub-entry-id={subEntryItem.id}
-                  >
-                    {lines.map((line, index) => {
-                      const bullet = isBulletLine(line);
-                      const content = normalizeBulletLine(line);
-
-                      return (
-                        <p
-                          key={`${subEntryItem.id}-${index}`}
-                          className={`resume-preview-paragraph${
-                            bullet ? ' resume-preview-paragraph--bullet' : ''
-                          }`}
-                        >
-                          {bullet ? `• ${content}` : content}
-                        </p>
-                      );
-                    })}
-                  </div>
-                );
-              })}
-
-              {hiddenSubEntryAnchors.map((subEntryItem) => {
-                return (
-                  <div
-                    key={subEntryItem.id}
-                    className="resume-preview-anchor"
-                    data-preview-sub-entry-id={subEntryItem.id}
-                  />
                 );
               })}
             </div>
