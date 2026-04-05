@@ -474,7 +474,9 @@
 }
 
 .preview-frame {
-  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  overflow: auto;
   border-radius: 22px;
   background: var(--builder-surface);
   box-shadow: 0 24px 56px rgba(15, 23, 42, 0.2);

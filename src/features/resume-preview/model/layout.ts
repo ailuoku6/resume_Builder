@@ -182,7 +182,7 @@ export const getResumeSectionMarginTopPt = (sectionIndex: number, hasSummary: bo
 export const createResumePreviewStyles = (previewFontFamily: string): ResumePreviewStyles => {
   return {
     page: {
-      width: 'min(100%, 210mm)',
+      width: '210mm',
       minHeight: 'calc(297mm - 8px)',
       margin: '0 auto',
       paddingTop: RESUME_LAYOUT_PX.pagePaddingTop,

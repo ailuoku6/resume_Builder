@@ -6,20 +6,49 @@ interface CustomPdfTextProps {
   style?: Record<string, unknown>;
 }
 
-export const PDF_NO_HYPHENATION_CALLBACK = (word: string | null): string[] => {
-  return [word ?? ''];
-};
+const LIGATURE_SEQUENCE_PATTERN = /(ffi|ffl|ff|fi|fl)/g;
 
-const normalizePdfText = (text: string): string => {
-  return text.replace(/\r\n?/gu, '\n');
+export const buildCopySafePdfTextChildren = (text: string): React.ReactNode => {
+  const nodes: React.ReactNode[] = [];
+  let cursor = 0;
+  let matchIndex = 0;
+
+  for (const match of text.matchAll(LIGATURE_SEQUENCE_PATTERN)) {
+    const start = match.index ?? 0;
+
+    if (start > cursor) {
+      nodes.push(text.slice(cursor, start));
+    }
+
+    for (const [charIndex, char] of Array.from(match[0]).entries()) {
+      nodes.push(
+        <Text key={`ligature-${matchIndex}-${charIndex}`}>
+          {char}
+        </Text>,
+      );
+    }
+
+    cursor = start + match[0].length;
+    matchIndex += 1;
+  }
+
+  if (cursor < text.length) {
+    nodes.push(text.slice(cursor));
+  }
+
+  if (nodes.length === 0) {
+    return text;
+  }
+
+  if (nodes.length === 1 && typeof nodes[0] === 'string') {
+    return nodes[0];
+  }
+
+  return nodes;
 };
 
 const CustomPdfText: React.FC<CustomPdfTextProps> = ({ text, style }) => {
-  return (
-    <Text style={style as never} hyphenationCallback={PDF_NO_HYPHENATION_CALLBACK}>
-      {normalizePdfText(text)}
-    </Text>
-  );
+  return <Text style={style as never}>{buildCopySafePdfTextChildren(text.replace(/\r\n?/gu, '\n'))}</Text>;
 };
 
 export default CustomPdfText;
