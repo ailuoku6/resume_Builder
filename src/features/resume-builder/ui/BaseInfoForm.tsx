@@ -78,16 +78,14 @@ const BaseInfoFormBase: React.FC<BaseInfoFormProps> = ({ store }) => {
             </Field>
 
             <Field label="性别">
-              <select
-                className="editor-input editor-select"
+              <ImeInput
+                className="editor-input"
+                placeholder="Male / Female / Non-binary"
                 value={store.sex}
-                onChange={(event) => {
-                  store.setBasicField('sex', event.target.value);
+                onValueChange={(value) => {
+                  store.setBasicField('sex', value);
                 }}
-              >
-                <option value="男">男</option>
-                <option value="女">女</option>
-              </select>
+              />
             </Field>
 
             <Field label="简历字体" hint="当前仅保留稳定可导出的 OPPOSans，后续新增字体只需扩展字体预设配置。">
